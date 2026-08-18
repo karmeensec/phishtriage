@@ -73,9 +73,16 @@ def extract_text(message: Any) -> str:
 
 
 def extract_urls(text: str) -> list[str]:
-    """Extract and deduplicate HTTP and HTTPS URLs."""
+    """Extract, clean and deduplicate HTTP and HTTPS URLs."""
 
-    return sorted(set(URL_PATTERN.findall(text)))
+    trailing_punctuation = ".,;:!?)]}"
+
+    cleaned_urls = {
+        url.rstrip(trailing_punctuation)
+        for url in URL_PATTERN.findall(text)
+    }
+
+    return sorted(url for url in cleaned_urls if url)
 
 
 def extract_attachments(message: Any) -> list[dict[str, Any]]:
