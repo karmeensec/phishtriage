@@ -16,6 +16,12 @@ SAMPLE_EMAIL = (
     / "legitimate_email.eml"
 )
 
+PHISHING_EMAIL = (
+    Path(__file__).parent
+    / "sample_emails"
+    / "phishing_email.eml"
+)
+
 
 def test_parse_email_extracts_expected_information() -> None:
     result = parse_email(str(SAMPLE_EMAIL))
@@ -30,6 +36,8 @@ def test_parse_email_extracts_expected_information() -> None:
     ]
 
     assert result["attachments"] == []
+
+    assert result["header_analysis"]["findings"] == []
 
 
 def test_extract_urls_removes_duplicates() -> None:
@@ -77,3 +85,35 @@ def test_rejects_missing_email(tmp_path: Path) -> None:
         match="does not exist",
     ):
         validate_email_file(missing_email)
+
+
+def test_phishing_email_produces_header_findings() -> None:
+    result = parse_email(str(PHISHING_EMAIL))
+
+    header_analysis = result["header_analysis"]
+
+    assert header_analysis["sender_domain"] == (
+        "microsoft-security.example"
+    )
+
+    assert header_analysis["reply_to_domain"] == (
+        "credential-check.example"
+    )
+
+    assert header_analysis["authentication"] == {
+        "spf": "fail",
+        "dkim": "fail",
+        "dmarc": "fail",
+    }
+
+    rule_ids = {
+        finding["rule_id"]
+        for finding in header_analysis["findings"]
+    }
+
+    assert rule_ids == {
+        "HDR-001",
+        "HDR-SPF",
+        "HDR-DKIM",
+        "HDR-DMARC",
+    }

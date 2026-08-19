@@ -4,7 +4,7 @@ from email import policy
 from email.parser import BytesParser
 from pathlib import Path
 from typing import Any
-
+from backend.app.analyzers.header_analyzer import analyze_headers
 
 MAX_EMAIL_SIZE = 2 * 1024 * 1024  # 2 MB
 
@@ -111,23 +111,37 @@ def parse_email(file_name: str) -> dict[str, Any]:
     file_path = Path(file_name)
     validate_email_file(file_path)
 
+    # Parse the email strictly as data; no links or attachments are executed.
     with file_path.open("rb") as email_file:
         message = BytesParser(policy=policy.default).parse(email_file)
 
     email_text = extract_text(message)
 
+    sender = str(message.get("From", ""))
+    reply_to = str(message.get("Reply-To", ""))
+    authentication_results = str(
+        message.get("Authentication-Results", "")
+    )
+
+    header_analysis = analyze_headers(
+        sender=sender,
+        reply_to=reply_to,
+        authentication_header=authentication_results,
+    )
+
     return {
         "file": file_path.name,
         "subject": str(message.get("Subject", "")),
-        "from": str(message.get("From", "")),
+        "from": sender,
         "to": str(message.get("To", "")),
-        "reply_to": str(message.get("Reply-To", "")),
+        "reply_to": reply_to,
         "date": str(message.get("Date", "")),
         "message_id": str(message.get("Message-ID", "")),
-        "authentication_results": str(
-            message.get("Authentication-Results", "")
+        "authentication_results": authentication_results,
+        "received_header_count": len(
+            message.get_all("Received", [])
         ),
-        "received_header_count": len(message.get_all("Received", [])),
         "urls": extract_urls(email_text),
         "attachments": extract_attachments(message),
+        "header_analysis": header_analysis,
     }

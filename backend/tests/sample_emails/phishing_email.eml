@@ -1,0 +1,16 @@
+From: Microsoft Security <support@microsoft-security.example>
+To: Kamil <analyst@example.net>
+Reply-To: Verification Team <verify@credential-check.example>
+Date: Wed, 19 Aug 2026 09:00:00 -0500
+Message-ID: <phishing-sample-001@microsoft-security.example>
+Subject: Urgent: Verify your account immediately
+Authentication-Results: mail.example.net; spf=fail; dkim=fail; dmarc=fail
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+
+Your account will be suspended today.
+
+Verify your credentials immediately:
+https://login-verification.example/account
+
+Security Team
