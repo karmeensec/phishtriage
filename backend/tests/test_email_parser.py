@@ -48,6 +48,7 @@ def test_parse_email_extracts_expected_information() -> None:
     assert result["url_analysis"]["findings"] == []
     assert result["findings"] == []
     assert result["attachment_analysis"]["findings"] == []
+    assert result["body_analysis"]["findings"] == []
 
     assert result["risk_assessment"]["score"] == 0
     assert result["risk_assessment"]["level"] == "low"
@@ -94,6 +95,17 @@ def test_phishing_email_produces_header_findings() -> None:
         "URL-IP",
     }
 
+    body_rule_ids = {
+        finding["rule_id"]
+        for finding in result["body_analysis"]["findings"]
+    }
+
+    assert body_rule_ids == {
+        "BODY-URGENCY",
+        "BODY-ACCOUNT",
+        "BODY-CREDENTIALS",
+    }
+
     combined_rule_ids = {
         finding["rule_id"]
         for finding in result["findings"]
@@ -106,13 +118,16 @@ def test_phishing_email_produces_header_findings() -> None:
         "HDR-DMARC",
         "URL-HTTP",
         "URL-IP",
+        "BODY-URGENCY",
+        "BODY-ACCOUNT",
+        "BODY-CREDENTIALS",
     }
 
-    # The raw score is 130, but the public score is capped at 100.
-    assert result["risk_assessment"]["uncapped_score"] == 130
+    # The raw score is 185, but the public score is capped at 100.
+    assert result["risk_assessment"]["uncapped_score"] == 185
     assert result["risk_assessment"]["score"] == 100
     assert result["risk_assessment"]["level"] == "critical"
-    assert result["risk_assessment"]["finding_count"] == 6
+    assert result["risk_assessment"]["finding_count"] == 9
 
 
 def test_extract_urls_removes_duplicates() -> None:
