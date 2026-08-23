@@ -3,9 +3,11 @@ from pathlib import Path
 import pytest
 
 from backend.app.analyzers.email_parser import (
+    MAX_EMAIL_SIZE,
     EmailValidationError,
     extract_urls,
     parse_email,
+    parse_email_bytes,
     validate_email_file,
 )
 
@@ -199,3 +201,56 @@ def test_attachment_email_produces_attachment_findings() -> None:
     assert result["risk_assessment"]["score"] == 55
     assert result["risk_assessment"]["level"] == "high"
     assert result["risk_assessment"]["finding_count"] == 2
+
+def test_parses_email_directly_from_bytes() -> None:
+    file_content = SAMPLE_EMAIL.read_bytes()
+
+    result = parse_email_bytes(
+        file_content=file_content,
+        file_name="legitimate_email.eml",
+    )
+
+    assert result["subject"] == (
+        "Security portal notification"
+    )
+
+    assert result["risk_assessment"]["level"] == "low"
+
+
+def test_rejects_upload_filename_with_path() -> None:
+    file_content = SAMPLE_EMAIL.read_bytes()
+
+    with pytest.raises(
+        EmailValidationError,
+        match="filename is invalid",
+    ):
+        parse_email_bytes(
+            file_content=file_content,
+            file_name="../malicious.eml",
+        )
+
+
+def test_rejects_fake_email_content() -> None:
+    with pytest.raises(
+        EmailValidationError,
+        match="recognizable email headers",
+    ):
+        parse_email_bytes(
+            file_content=b"This is not an email.",
+            file_name="fake.eml",
+        )
+
+
+def test_rejects_oversized_email_bytes() -> None:
+    oversized_content = b"A" * (
+        MAX_EMAIL_SIZE + 1
+    )
+
+    with pytest.raises(
+        EmailValidationError,
+        match="exceeds the 2 MB",
+    ):
+        parse_email_bytes(
+            file_content=oversized_content,
+            file_name="oversized.eml",
+        )

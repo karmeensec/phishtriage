@@ -4,15 +4,17 @@ from email import policy
 from email.parser import BytesParser
 from pathlib import Path
 from typing import Any
-from backend.app.analyzers.header_analyzer import analyze_headers
-from backend.app.analyzers.risk_scorer import calculate_risk
-from backend.app.analyzers.url_analyzer import analyze_urls
+
 from backend.app.analyzers.attachment_analyzer import (
     analyze_attachments,
 )
 from backend.app.analyzers.body_analyzer import analyze_body
+from backend.app.analyzers.header_analyzer import analyze_headers
+from backend.app.analyzers.risk_scorer import calculate_risk
+from backend.app.analyzers.url_analyzer import analyze_urls
 
-MAX_EMAIL_SIZE = 2 * 1024 * 1024  # 2 MB
+
+MAX_EMAIL_SIZE = 2 * 1024 * 1024
 
 URL_PATTERN = re.compile(
     r"https?://[^\s<>'\"\])]+",
@@ -25,22 +27,71 @@ class EmailValidationError(ValueError):
 
 
 def validate_email_file(file_path: Path) -> None:
-    """Validate an email file before parsing it."""
+    """Validate a local email file before reading it."""
 
     if not file_path.exists():
-        raise EmailValidationError("The email file does not exist.")
+        raise EmailValidationError(
+            "The email file does not exist."
+        )
 
     if not file_path.is_file():
-        raise EmailValidationError("The supplied path is not a file.")
+        raise EmailValidationError(
+            "The supplied path is not a file."
+        )
 
     if file_path.suffix.lower() != ".eml":
-        raise EmailValidationError("Only .eml files are supported.")
+        raise EmailValidationError(
+            "Only .eml files are supported."
+        )
 
-    if file_path.stat().st_size == 0:
-        raise EmailValidationError("The email file is empty.")
+    file_size = file_path.stat().st_size
 
-    if file_path.stat().st_size > MAX_EMAIL_SIZE:
-        raise EmailValidationError("The email exceeds the 2 MB size limit.")
+    if file_size == 0:
+        raise EmailValidationError(
+            "The email file is empty."
+        )
+
+    if file_size > MAX_EMAIL_SIZE:
+        raise EmailValidationError(
+            "The email exceeds the 2 MB size limit."
+        )
+
+
+def validate_email_bytes(
+    file_content: bytes,
+    file_name: str,
+) -> None:
+    """Validate an uploaded filename and its byte content."""
+
+    if not file_name:
+        raise EmailValidationError(
+            "The uploaded file must have a filename."
+        )
+
+    # Reject path components rather than trusting a client filename.
+    if (
+        "/" in file_name
+        or "\\" in file_name
+        or "\x00" in file_name
+    ):
+        raise EmailValidationError(
+            "The uploaded filename is invalid."
+        )
+
+    if Path(file_name).suffix.lower() != ".eml":
+        raise EmailValidationError(
+            "Only .eml files are supported."
+        )
+
+    if not file_content:
+        raise EmailValidationError(
+            "The email file is empty."
+        )
+
+    if len(file_content) > MAX_EMAIL_SIZE:
+        raise EmailValidationError(
+            "The email exceeds the 2 MB size limit."
+        )
 
 
 def extract_text(message: Any) -> str:
@@ -56,7 +107,10 @@ def extract_text(message: Any) -> str:
             if disposition == "attachment":
                 continue
 
-            if content_type not in {"text/plain", "text/html"}:
+            if content_type not in {
+                "text/plain",
+                "text/html",
+            }:
                 continue
 
             try:
@@ -88,38 +142,45 @@ def extract_urls(text: str) -> list[str]:
         for url in URL_PATTERN.findall(text)
     }
 
-    return sorted(url for url in cleaned_urls if url)
+    return sorted(
+        url
+        for url in cleaned_urls
+        if url
+    )
 
 
-def extract_attachments(message: Any) -> list[dict[str, Any]]:
-    """Collect attachment metadata without opening or executing files."""
+def extract_attachments(
+    message: Any,
+) -> list[dict[str, Any]]:
+    """Collect metadata without opening or executing attachments."""
 
     attachments: list[dict[str, Any]] = []
 
     for part in message.iter_attachments():
+        # Decode only as bounded bytes for hashing and metadata.
         content = part.get_payload(decode=True) or b""
 
         attachments.append(
             {
-                "filename": part.get_filename() or "unnamed",
+                "filename": (
+                    part.get_filename() or "unnamed"
+                ),
                 "content_type": part.get_content_type(),
                 "size_bytes": len(content),
-                "sha256": hashlib.sha256(content).hexdigest(),
+                "sha256": hashlib.sha256(
+                    content
+                ).hexdigest(),
             }
         )
 
     return attachments
 
 
-def parse_email(file_name: str) -> dict[str, Any]:
-    """Safely parse an email and return structured investigation data."""
-
-    file_path = Path(file_name)
-    validate_email_file(file_path)
-
-    # Parse the email strictly as data; no links or attachments are executed.
-    with file_path.open("rb") as email_file:
-        message = BytesParser(policy=policy.default).parse(email_file)
+def build_analysis_result(
+    message: Any,
+    file_name: str,
+) -> dict[str, Any]:
+    """Run all analyzers against a parsed email message."""
 
     subject = str(message.get("Subject", ""))
     email_text = extract_text(message)
@@ -138,13 +199,9 @@ def parse_email(file_name: str) -> dict[str, Any]:
         authentication_header=authentication_results,
     )
 
-    # Analyze URLs as strings without contacting them.
     url_analysis = analyze_urls(email_urls)
-
-    # Analyze attachment metadata without opening or executing files.
     attachment_analysis = analyze_attachments(attachments)
 
-    # Analyze text locally without exposing the complete body in results.
     body_analysis = analyze_body(
         subject=subject,
         body=email_text,
@@ -160,7 +217,7 @@ def parse_email(file_name: str) -> dict[str, Any]:
     risk_assessment = calculate_risk(combined_findings)
 
     return {
-        "file": file_path.name,
+        "file": file_name,
         "subject": subject,
         "from": sender,
         "to": str(message.get("To", "")),
@@ -180,3 +237,56 @@ def parse_email(file_name: str) -> dict[str, Any]:
         "findings": combined_findings,
         "risk_assessment": risk_assessment,
     }
+
+
+def parse_email_bytes(
+    file_content: bytes,
+    file_name: str,
+) -> dict[str, Any]:
+    """Safely analyze uploaded email bytes without saving them."""
+
+    validate_email_bytes(file_content, file_name)
+
+    try:
+        message = BytesParser(
+            policy=policy.default
+        ).parsebytes(file_content)
+    except (TypeError, ValueError) as error:
+        raise EmailValidationError(
+            "The email content could not be parsed."
+        ) from error
+
+    recognizable_headers = (
+        "From",
+        "To",
+        "Subject",
+        "Date",
+        "Message-ID",
+    )
+
+    if not any(
+        message.get(header)
+        for header in recognizable_headers
+    ):
+        raise EmailValidationError(
+            "The file does not contain recognizable email headers."
+        )
+
+    return build_analysis_result(
+        message=message,
+        file_name=file_name,
+    )
+
+
+def parse_email(file_name: str) -> dict[str, Any]:
+    """Safely analyze a local .eml file."""
+
+    file_path = Path(file_name)
+    validate_email_file(file_path)
+
+    file_content = file_path.read_bytes()
+
+    return parse_email_bytes(
+        file_content=file_content,
+        file_name=file_path.name,
+    )
