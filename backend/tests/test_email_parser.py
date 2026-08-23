@@ -22,6 +22,12 @@ PHISHING_EMAIL = (
     / "phishing_email.eml"
 )
 
+ATTACHMENT_EMAIL = (
+    Path(__file__).parent
+    / "sample_emails"
+    / "attachment_phishing_email.eml"
+)
+
 
 def test_parse_email_extracts_expected_information() -> None:
     result = parse_email(str(SAMPLE_EMAIL))
@@ -41,6 +47,7 @@ def test_parse_email_extracts_expected_information() -> None:
     assert result["header_analysis"]["findings"] == []
     assert result["url_analysis"]["findings"] == []
     assert result["findings"] == []
+    assert result["attachment_analysis"]["findings"] == []
 
     assert result["risk_assessment"]["score"] == 0
     assert result["risk_assessment"]["level"] == "low"
@@ -153,3 +160,27 @@ def test_rejects_missing_email(tmp_path: Path) -> None:
         match="does not exist",
     ):
         validate_email_file(missing_email)
+
+
+def test_attachment_email_produces_attachment_findings() -> None:
+    result = parse_email(str(ATTACHMENT_EMAIL))
+
+    assert len(result["attachments"]) == 1
+    assert result["attachments"][0]["filename"] == (
+        "invoice.pdf.exe"
+    )
+
+    attachment_rule_ids = {
+        finding["rule_id"]
+        for finding in result["attachment_analysis"]["findings"]
+    }
+
+    assert attachment_rule_ids == {
+        "ATT-DANGEROUS",
+        "ATT-DOUBLE",
+    }
+
+    assert result["risk_assessment"]["uncapped_score"] == 55
+    assert result["risk_assessment"]["score"] == 55
+    assert result["risk_assessment"]["level"] == "high"
+    assert result["risk_assessment"]["finding_count"] == 2

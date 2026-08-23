@@ -1,0 +1,23 @@
+From: Billing Team <billing@example.com>
+To: Kamil <analyst@example.net>
+Reply-To: billing@example.com
+Date: Sun, 23 Aug 2026 10:00:00 -0500
+Message-ID: <attachment-sample-001@example.com>
+Subject: Invoice attached
+Authentication-Results: mail.example.net; spf=pass; dkim=pass; dmarc=pass
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="PHISHTRIAGE-BOUNDARY"
+
+--PHISHTRIAGE-BOUNDARY
+Content-Type: text/plain; charset="UTF-8"
+
+Please review the attached invoice.
+
+--PHISHTRIAGE-BOUNDARY
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice.pdf.exe"
+
+VGhpcyBpcyBhIGhhcm1sZXNzIHRlc3QgZmlsZS4=
+
+--PHISHTRIAGE-BOUNDARY--

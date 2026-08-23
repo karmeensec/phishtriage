@@ -7,6 +7,9 @@ from typing import Any
 from backend.app.analyzers.header_analyzer import analyze_headers
 from backend.app.analyzers.risk_scorer import calculate_risk
 from backend.app.analyzers.url_analyzer import analyze_urls
+from backend.app.analyzers.attachment_analyzer import (
+    analyze_attachments,
+)
 
 MAX_EMAIL_SIZE = 2 * 1024 * 1024  # 2 MB
 
@@ -119,6 +122,7 @@ def parse_email(file_name: str) -> dict[str, Any]:
 
     email_text = extract_text(message)
     email_urls = extract_urls(email_text)
+    attachments = extract_attachments(message)
 
     sender = str(message.get("From", ""))
     reply_to = str(message.get("Reply-To", ""))
@@ -132,12 +136,16 @@ def parse_email(file_name: str) -> dict[str, Any]:
         authentication_header=authentication_results,
     )
 
-    # Analyze extracted URLs as strings without contacting them.
+    # Analyze URLs as strings without contacting them.
     url_analysis = analyze_urls(email_urls)
+
+    # Analyze attachment metadata without opening or executing files.
+    attachment_analysis = analyze_attachments(attachments)
 
     combined_findings = [
         *header_analysis["findings"],
         *url_analysis["findings"],
+        *attachment_analysis["findings"],
     ]
 
     risk_assessment = calculate_risk(combined_findings)
@@ -155,9 +163,10 @@ def parse_email(file_name: str) -> dict[str, Any]:
             message.get_all("Received", [])
         ),
         "urls": email_urls,
-        "attachments": extract_attachments(message),
+        "attachments": attachments,
         "header_analysis": header_analysis,
         "url_analysis": url_analysis,
+        "attachment_analysis": attachment_analysis,
         "findings": combined_findings,
         "risk_assessment": risk_assessment,
     }
