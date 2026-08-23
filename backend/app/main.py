@@ -1,31 +1,17 @@
-import argparse
-import json
+from fastapi import FastAPI
 
-from backend.app.analyzers.email_parser import (
-    EmailValidationError,
-    parse_email,
+from backend.app.api.health import router as health_router
+
+
+app = FastAPI(
+    title="PhishTriage API",
+    description=(
+        "Secure phishing email analysis and incident triage API."
+    ),
+    version="0.1.0",
 )
 
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Safely analyze an .eml email file."
-    )
-
-    parser.add_argument(
-        "email_file",
-        help="Path to the .eml file that should be analyzed.",
-    )
-
-    arguments = parser.parse_args()
-
-    try:
-        result = parse_email(arguments.email_file)
-    except EmailValidationError as error:
-        parser.error(str(error))
-
-    print(json.dumps(result, indent=2))
-
-
-if __name__ == "__main__":
-    main()
+app.include_router(
+    health_router,
+    prefix="/api/v1",
+)
