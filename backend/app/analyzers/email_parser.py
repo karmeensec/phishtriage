@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from backend.app.analyzers.header_analyzer import analyze_headers
 from backend.app.analyzers.risk_scorer import calculate_risk
+from backend.app.analyzers.url_analyzer import analyze_urls
 
 MAX_EMAIL_SIZE = 2 * 1024 * 1024  # 2 MB
 
@@ -117,6 +118,7 @@ def parse_email(file_name: str) -> dict[str, Any]:
         message = BytesParser(policy=policy.default).parse(email_file)
 
     email_text = extract_text(message)
+    email_urls = extract_urls(email_text)
 
     sender = str(message.get("From", ""))
     reply_to = str(message.get("Reply-To", ""))
@@ -130,9 +132,15 @@ def parse_email(file_name: str) -> dict[str, Any]:
         authentication_header=authentication_results,
     )
 
-    risk_assessment = calculate_risk(
-    header_analysis["findings"]
-)
+    # Analyze extracted URLs as strings without contacting them.
+    url_analysis = analyze_urls(email_urls)
+
+    combined_findings = [
+        *header_analysis["findings"],
+        *url_analysis["findings"],
+    ]
+
+    risk_assessment = calculate_risk(combined_findings)
 
     return {
         "file": file_path.name,
@@ -146,8 +154,10 @@ def parse_email(file_name: str) -> dict[str, Any]:
         "received_header_count": len(
             message.get_all("Received", [])
         ),
-        "urls": extract_urls(email_text),
+        "urls": email_urls,
         "attachments": extract_attachments(message),
         "header_analysis": header_analysis,
+        "url_analysis": url_analysis,
+        "findings": combined_findings,
         "risk_assessment": risk_assessment,
     }

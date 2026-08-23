@@ -36,9 +36,12 @@ def test_parse_email_extracts_expected_information() -> None:
     ]
 
     assert result["attachments"] == []
-    assert result["header_analysis"]["findings"] == []
 
-    # A legitimate sample should receive a low risk score.
+    # The legitimate email should have no suspicious findings.
+    assert result["header_analysis"]["findings"] == []
+    assert result["url_analysis"]["findings"] == []
+    assert result["findings"] == []
+
     assert result["risk_assessment"]["score"] == 0
     assert result["risk_assessment"]["level"] == "low"
 
@@ -62,21 +65,47 @@ def test_phishing_email_produces_header_findings() -> None:
         "dmarc": "fail",
     }
 
-    rule_ids = {
+    header_rule_ids = {
         finding["rule_id"]
         for finding in header_analysis["findings"]
     }
 
-    assert rule_ids == {
+    assert header_rule_ids == {
         "HDR-001",
         "HDR-SPF",
         "HDR-DKIM",
         "HDR-DMARC",
     }
 
-    # Multiple suspicious findings should produce critical risk.
-    assert result["risk_assessment"]["score"] == 95
+    url_rule_ids = {
+        finding["rule_id"]
+        for finding in result["url_analysis"]["findings"]
+    }
+
+    assert url_rule_ids == {
+        "URL-HTTP",
+        "URL-IP",
+    }
+
+    combined_rule_ids = {
+        finding["rule_id"]
+        for finding in result["findings"]
+    }
+
+    assert combined_rule_ids == {
+        "HDR-001",
+        "HDR-SPF",
+        "HDR-DKIM",
+        "HDR-DMARC",
+        "URL-HTTP",
+        "URL-IP",
+    }
+
+    # The raw score is 130, but the public score is capped at 100.
+    assert result["risk_assessment"]["uncapped_score"] == 130
+    assert result["risk_assessment"]["score"] == 100
     assert result["risk_assessment"]["level"] == "critical"
+    assert result["risk_assessment"]["finding_count"] == 6
 
 
 def test_extract_urls_removes_duplicates() -> None:
