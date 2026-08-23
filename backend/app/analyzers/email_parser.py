@@ -5,6 +5,7 @@ from email.parser import BytesParser
 from pathlib import Path
 from typing import Any
 from backend.app.analyzers.header_analyzer import analyze_headers
+from backend.app.analyzers.risk_scorer import calculate_risk
 
 MAX_EMAIL_SIZE = 2 * 1024 * 1024  # 2 MB
 
@@ -129,6 +130,10 @@ def parse_email(file_name: str) -> dict[str, Any]:
         authentication_header=authentication_results,
     )
 
+    risk_assessment = calculate_risk(
+    header_analysis["findings"]
+)
+
     return {
         "file": file_path.name,
         "subject": str(message.get("Subject", "")),
@@ -144,4 +149,5 @@ def parse_email(file_name: str) -> dict[str, Any]:
         "urls": extract_urls(email_text),
         "attachments": extract_attachments(message),
         "header_analysis": header_analysis,
+        "risk_assessment": risk_assessment,
     }
