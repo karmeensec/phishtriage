@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local development database
+backend/phishtriage.db
+backend/phishtriage.db-shm
+backend/phishtriage.db-wal
