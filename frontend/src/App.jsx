@@ -1,12 +1,42 @@
 import { useState } from "react";
+import { analyzeEmail } from "./services/api";
 import "./App.css";
 
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   function handleFileChange(event) {
     const file = event.target.files[0] ?? null;
+
     setSelectedFile(file);
+    setResult(null);
+    setError("");
+  }
+
+  async function handleAnalyze() {
+    if (!selectedFile || isAnalyzing) {
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setResult(null);
+    setError("");
+
+    try {
+      const analysisResult = await analyzeEmail(selectedFile);
+      setResult(analysisResult);
+    } catch (analysisError) {
+      setError(
+        analysisError instanceof Error
+          ? analysisError.message
+          : "An unexpected error occurred.",
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
   }
 
   return (
@@ -45,10 +75,27 @@ function App() {
           </div>
         )}
 
-        <button type="button" disabled={!selectedFile}>
-          Analyze Email
+        <button
+          type="button"
+          disabled={!selectedFile || isAnalyzing}
+          onClick={handleAnalyze}
+        >
+          {isAnalyzing ? "Analyzing…" : "Analyze Email"}
         </button>
+
+        {error && (
+          <div className="error-message" role="alert">
+            {error}
+          </div>
+        )}
       </section>
+
+      {result && (
+        <section className="result-panel">
+          <h2>Analysis result</h2>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </section>
+      )}
     </main>
   );
 }
