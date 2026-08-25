@@ -141,3 +141,247 @@ button:disabled {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.report-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+
+.report-heading h2 {
+  margin: 0;
+}
+
+.report-file {
+  margin-bottom: 0;
+}
+
+.risk-score {
+  display: grid;
+  min-width: 120px;
+  padding: 18px;
+  border: 2px solid;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.risk-score strong {
+  font-size: 2rem;
+}
+
+.risk-score small {
+  margin-top: 5px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.risk-low {
+  color: #86efac;
+  border-color: #22c55e;
+  background: #052e16;
+}
+
+.risk-medium {
+  color: #fde68a;
+  border-color: #eab308;
+  background: #422006;
+}
+
+.risk-high {
+  color: #fdba74;
+  border-color: #f97316;
+  background: #431407;
+}
+
+.risk-critical {
+  color: #fecaca;
+  border-color: #ef4444;
+  background: #450a0a;
+}
+
+.risk-unknown {
+  color: #cbd5e1;
+  border-color: #64748b;
+  background: #1e293b;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.summary-card {
+  padding: 18px;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  background: #081525;
+}
+
+.summary-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.6rem;
+}
+
+.report-section {
+  margin-top: 32px;
+}
+
+.report-section h3 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #1e3a5f;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.details-grid div,
+.evidence div {
+  min-width: 0;
+}
+
+.details-grid dt,
+.evidence dt {
+  color: #7dd3fc;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.details-grid dd,
+.evidence dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.authentication-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.authentication-card {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  background: #081525;
+}
+
+.authentication-card strong {
+  text-transform: uppercase;
+}
+
+.auth-pass {
+  color: #86efac;
+}
+
+.auth-fail {
+  color: #fca5a5;
+}
+
+.auth-neutral,
+.auth-unknown {
+  color: #cbd5e1;
+}
+
+.findings-list {
+  display: grid;
+  gap: 14px;
+}
+
+.finding-card {
+  padding: 20px;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  background: #081525;
+}
+
+.finding-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.finding-heading h4 {
+  margin: 6px 0 0;
+}
+
+.rule-id {
+  color: #7dd3fc;
+  font-family: monospace;
+}
+
+.severity {
+  align-self: flex-start;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.severity-low {
+  color: #86efac;
+  background: #14532d;
+}
+
+.severity-medium {
+  color: #fde68a;
+  background: #713f12;
+}
+
+.severity-high,
+.severity-critical {
+  color: #fecaca;
+  background: #7f1d1d;
+}
+
+.severity-unknown {
+  color: #cbd5e1;
+  background: #334155;
+}
+
+.finding-score {
+  margin-top: 14px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.evidence {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #030712;
+}
+
+.no-findings {
+  color: #86efac;
+}
+
+@media (max-width: 700px) {
+  .report-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .summary-grid,
+  .authentication-grid,
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}

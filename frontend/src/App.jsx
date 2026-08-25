@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { analyzeEmail } from "./services/api";
 import "./App.css";
+import AnalysisReport from "./components/AnalysisReport.jsx";
 
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -90,12 +91,8 @@ function App() {
         )}
       </section>
 
-      {result && (
-        <section className="result-panel">
-          <h2>Analysis result</h2>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        </section>
-      )}
+     {result && <AnalysisReport result={result} />}
+     
     </main>
   );
 }

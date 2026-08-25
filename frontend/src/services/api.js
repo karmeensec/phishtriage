@@ -32,7 +32,9 @@ export async function analyzeEmail(file) {
     return data;
   } catch (error) {
     if (error.name === "AbortError") {
-      throw new Error("The analysis request timed out.");
+      throw new Error("The analysis request timed out.", {
+        cause: error,
+      });
     }
 
     throw error;
