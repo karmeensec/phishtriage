@@ -2,16 +2,23 @@ from typing import Annotated, Any
 
 from fastapi import (
     APIRouter,
+    Depends,
     File,
     HTTPException,
     UploadFile,
     status,
 )
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from backend.app.analyzers.email_parser import (
     MAX_EMAIL_SIZE,
     EmailValidationError,
     parse_email_bytes,
+)
+from backend.app.database import get_db
+from backend.app.services.analysis_history import (
+    save_analysis_record,
 )
 
 
@@ -27,8 +34,9 @@ async def analyze_email(
         UploadFile,
         File(description="Email file in .eml format"),
     ],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
-    """Analyze one uploaded email without permanent storage."""
+    """Analyze an email and save a minimized history record."""
 
     try:
         # Read one extra byte so an oversized upload is detectable.
@@ -46,7 +54,7 @@ async def analyze_email(
         )
 
     try:
-        return parse_email_bytes(
+        analysis_result = parse_email_bytes(
             file_content=file_content,
             file_name=file.filename or "",
         )
@@ -56,3 +64,24 @@ async def analyze_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         ) from error
+
+    try:
+        record = save_analysis_record(
+            db,
+            file_name=analysis_result["file"],
+            file_content=file_content,
+            analysis=analysis_result,
+        )
+    except SQLAlchemyError as error:
+        # Do not expose database details or credentials.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Analysis history is temporarily unavailable."
+            ),
+        ) from error
+
+    return {
+        **analysis_result,
+        "analysis_id": record.id,
+    }

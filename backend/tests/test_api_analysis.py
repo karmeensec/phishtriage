@@ -1,9 +1,18 @@
+from collections.abc import Generator
+from hashlib import sha256
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from backend.app.analyzers.email_parser import MAX_EMAIL_SIZE
+from backend.app.database import Base, get_db
 from backend.app.main import app
+from backend.app.models import AnalysisRecord
+from sqlalchemy import create_engine, select
 
 
 client = TestClient(app)
@@ -18,8 +27,42 @@ PHISHING_EMAIL = (
     / "phishing_email.eml"
 )
 
+@pytest.fixture(autouse=True)
+def isolated_database(
+) -> Generator[sessionmaker[Session], None, None]:
+    """Use a fresh in-memory database for every API test."""
 
-def test_analyzes_uploaded_phishing_email() -> None:
+    test_engine = create_engine(
+    "sqlite+pysqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
+    Base.metadata.create_all(test_engine)
+
+    test_session_factory = sessionmaker(
+        bind=test_engine,
+        autoflush=False,
+        expire_on_commit=False,
+    )
+
+    def override_get_db(
+    ) -> Generator[Session, None, None]:
+        with test_session_factory() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    yield test_session_factory
+
+    app.dependency_overrides.pop(get_db, None)
+    Base.metadata.drop_all(test_engine)
+    test_engine.dispose()
+
+
+def test_analyzes_uploaded_phishing_email(
+    isolated_database: sessionmaker[Session],
+) -> None:
     file_content = PHISHING_EMAIL.read_bytes()
 
     response = client.post(
@@ -41,6 +84,20 @@ def test_analyzes_uploaded_phishing_email() -> None:
     assert result["risk_assessment"]["score"] == 100
     assert result["risk_assessment"]["level"] == "critical"
     assert result["risk_assessment"]["finding_count"] == 9
+    assert isinstance(result["analysis_id"], int)
+
+    with isolated_database() as session:
+        saved_record = session.scalar(
+            select(AnalysisRecord)
+        )
+
+    assert saved_record is not None
+    assert saved_record.id == result["analysis_id"]
+    assert saved_record.risk_score == 100
+    assert saved_record.risk_level == "critical"
+    assert saved_record.file_sha256 == sha256(
+        file_content
+    ).hexdigest()
 
 
 def test_rejects_incorrect_extension() -> None:
