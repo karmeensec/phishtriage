@@ -221,3 +221,5 @@ __marimo__/
 backend/phishtriage.db
 backend/phishtriage.db-shm
 backend/phishtriage.db-wal
+
+node_modules
