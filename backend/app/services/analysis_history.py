@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.models import AnalysisRecord
+from sqlalchemy import func, select
 
 
 def _safe_filename(file_name: str) -> str:
@@ -77,3 +78,32 @@ def save_analysis_record(
         raise
 
     return record
+
+
+def list_analysis_records(
+    db: Session,
+    *,
+    limit: int,
+    offset: int,
+) -> tuple[list[AnalysisRecord], int]:
+    """Return recent analyses and the total record count."""
+
+    statement = (
+        select(AnalysisRecord)
+        .order_by(
+            AnalysisRecord.created_at.desc(),
+            AnalysisRecord.id.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+
+    records = list(
+        db.scalars(statement).all()
+    )
+
+    total = db.scalar(
+        select(func.count(AnalysisRecord.id))
+    ) or 0
+
+    return records, total

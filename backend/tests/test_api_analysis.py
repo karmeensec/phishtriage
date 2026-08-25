@@ -200,3 +200,72 @@ def test_requires_an_uploaded_file() -> None:
     response = client.post("/api/v1/analyze")
 
     assert response.status_code == 422
+
+
+def test_lists_recent_analysis_history(
+    isolated_database: sessionmaker[Session],
+) -> None:
+    file_content = PHISHING_EMAIL.read_bytes()
+
+    first_response = client.post(
+        "/api/v1/analyze",
+        files={
+            "file": (
+                "first_email.eml",
+                file_content,
+                "message/rfc822",
+            )
+        },
+    )
+
+    second_response = client.post(
+        "/api/v1/analyze",
+        files={
+            "file": (
+                "second_email.eml",
+                file_content,
+                "message/rfc822",
+            )
+        },
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+
+    response = client.get(
+        "/api/v1/analyses?limit=1&offset=0"
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["total"] == 2
+    assert result["limit"] == 1
+    assert result["offset"] == 0
+    assert len(result["items"]) == 1
+
+    newest_record = result["items"][0]
+
+    assert newest_record["file_name"] == (
+        "second_email.eml"
+    )
+    assert newest_record["risk_score"] == 100
+    assert newest_record["risk_level"] == "critical"
+
+    # Sensitive or detailed fields are excluded from listings.
+    assert "file_sha256" not in newest_record
+    assert "findings" not in newest_record
+
+
+def test_rejects_invalid_history_pagination() -> None:
+    invalid_limits = [
+        client.get("/api/v1/analyses?limit=0"),
+        client.get("/api/v1/analyses?limit=101"),
+        client.get("/api/v1/analyses?offset=-1"),
+    ]
+
+    assert all(
+        response.status_code == 422
+        for response in invalid_limits
+    )

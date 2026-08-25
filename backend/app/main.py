@@ -6,6 +6,7 @@ from backend.app.api.health import router as health_router
 from backend.app.middleware.security import (
     add_security_headers,
 )
+from backend.app.api.analyses import router as analyses_router
 
 
 ALLOWED_ORIGINS = [
@@ -39,5 +40,10 @@ app.include_router(
 
 app.include_router(
     analysis_router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    analyses_router,
     prefix="/api/v1",
 )
