@@ -1,9 +1,15 @@
 """Pydantic response schemas for the API."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+)
+
 
 
 class AnalysisSummary(BaseModel):
@@ -24,6 +30,19 @@ class AnalysisSummary(BaseModel):
     ]
     finding_count: int = Field(ge=0)
     created_at: datetime
+
+    @field_validator("created_at")
+    @classmethod
+    def ensure_utc_timezone(
+        cls,
+        value: datetime,
+    ) -> datetime:
+        """Ensure database timestamps are explicitly UTC."""
+
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+
+        return value.astimezone(timezone.utc)
 
 
 class AnalysisHistoryResponse(BaseModel):

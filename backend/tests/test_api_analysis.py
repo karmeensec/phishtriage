@@ -257,6 +257,10 @@ def test_lists_recent_analysis_history(
     assert "file_sha256" not in newest_record
     assert "findings" not in newest_record
 
+    assert newest_record["created_at"].endswith(
+        ("Z", "+00:00")
+    )
+
 
 def test_rejects_invalid_history_pagination() -> None:
     invalid_limits = [
