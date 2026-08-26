@@ -42,3 +42,47 @@ export async function analyzeEmail(file) {
     clearTimeout(timeoutId);
   }
 }
+
+export async function getAnalysisHistory({
+  limit = 10,
+  offset = 0,
+} = {}) {
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/analyses?${query}`,
+      {
+        method: "GET",
+        signal: controller.signal,
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.detail ?? "Could not load analysis history.",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(
+        "The history request timed out.",
+        { cause: error },
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}

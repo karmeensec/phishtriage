@@ -12,10 +12,15 @@ import {
   vi,
 } from "vitest";
 import App from "./App.jsx";
-import { analyzeEmail } from "./services/api.js";
+
+import {
+  analyzeEmail,
+  getAnalysisHistory,
+} from "./services/api.js";
 
 vi.mock("./services/api.js", () => ({
   analyzeEmail: vi.fn(),
+  getAnalysisHistory: vi.fn(),
 }));
 
 const analysisResult = {
@@ -57,6 +62,14 @@ const analysisResult = {
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    getAnalysisHistory.mockResolvedValue({
+      items: [],
+      total: 0,
+      limit: 10,
+      offset: 0,
+    });
+
   });
 
   it("uploads an email and displays its analysis", async () => {

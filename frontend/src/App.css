@@ -385,3 +385,78 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.history-panel {
+  margin-top: 28px;
+  padding: 28px;
+  border: 1px solid #1e3a5f;
+  border-radius: 16px;
+  background: #0d1b2d;
+}
+
+.history-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.history-heading h2 {
+  margin: 0;
+}
+
+.history-count {
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: #bae6fd;
+  background: #0c4a6e;
+  white-space: nowrap;
+}
+
+.history-message {
+  margin: 24px 0 0;
+  color: #94a3b8;
+}
+
+.history-table-container {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+  padding: 14px;
+  border-bottom: 1px solid #1e3a5f;
+  text-align: left;
+  vertical-align: top;
+}
+
+.history-table th {
+  color: #7dd3fc;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.history-subject,
+.history-sender {
+  display: block;
+  margin-top: 5px;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+}
+
+.history-sender {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .history-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

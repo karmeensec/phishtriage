@@ -1,13 +1,63 @@
-import { useState } from "react";
-import { analyzeEmail } from "./services/api";
-import "./App.css";
+import { useEffect, useState } from "react";
 import AnalysisReport from "./components/AnalysisReport.jsx";
+import HistoryPanel from "./components/HistoryPanel.jsx";
+import {
+  analyzeEmail,
+  getAnalysisHistory,
+} from "./services/api.js";
+import "./App.css";
 
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyError, setHistoryError] = useState("");
+  const [isHistoryLoading, setIsHistoryLoading] =
+    useState(true);
+  const [historyVersion, setHistoryVersion] = useState(0);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadHistory() {
+      setIsHistoryLoading(true);
+      setHistoryError("");
+
+      try {
+        const history = await getAnalysisHistory({
+          limit: 10,
+          offset: 0,
+        });
+
+        if (!isCancelled) {
+          setHistoryItems(history.items);
+          setHistoryTotal(history.total);
+        }
+      } catch (historyLoadError) {
+        if (!isCancelled) {
+          setHistoryError(
+            historyLoadError instanceof Error
+              ? historyLoadError.message
+              : "Could not load analysis history.",
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsHistoryLoading(false);
+        }
+      }
+    }
+
+    loadHistory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [historyVersion]);
 
   function handleFileChange(event) {
     const file = event.target.files[0] ?? null;
@@ -28,7 +78,9 @@ function App() {
 
     try {
       const analysisResult = await analyzeEmail(selectedFile);
+
       setResult(analysisResult);
+      setHistoryVersion((current) => current + 1);
     } catch (analysisError) {
       setError(
         analysisError instanceof Error
@@ -57,8 +109,8 @@ function App() {
       <section className="upload-panel">
         <h2>Analyze suspicious email</h2>
         <p>
-          Upload an email file to inspect its headers, URLs, attachments,
-          language, and authentication results.
+          Upload an email file to inspect its headers, URLs,
+          attachments, language, and authentication results.
         </p>
 
         <label className="file-input">
@@ -91,8 +143,14 @@ function App() {
         )}
       </section>
 
-     {result && <AnalysisReport result={result} />}
-     
+      {result && <AnalysisReport result={result} />}
+
+      <HistoryPanel
+        items={historyItems}
+        total={historyTotal}
+        isLoading={isHistoryLoading}
+        error={historyError}
+      />
     </main>
   );
 }
