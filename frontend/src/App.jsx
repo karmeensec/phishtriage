@@ -3,9 +3,11 @@ import AnalysisReport from "./components/AnalysisReport.jsx";
 import HistoryPanel from "./components/HistoryPanel.jsx";
 import {
   analyzeEmail,
+  getAnalysisDetail,
   getAnalysisHistory,
 } from "./services/api.js";
 import "./App.css";
+import SavedAnalysisDetail from "./components/SavedAnalysisDetail.jsx";
 
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -19,6 +21,14 @@ function App() {
   const [isHistoryLoading, setIsHistoryLoading] =
     useState(true);
   const [historyVersion, setHistoryVersion] = useState(0);
+
+    const [selectedHistoryId, setSelectedHistoryId] =
+    useState(null);
+  const [savedDetail, setSavedDetail] = useState(null);
+  const [savedDetailError, setSavedDetailError] =
+    useState("");
+  const [isSavedDetailLoading, setIsSavedDetailLoading] =
+    useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -92,7 +102,38 @@ function App() {
     }
   }
 
+  async function handleHistorySelect(analysisId) {
+    if (isSavedDetailLoading) {
+      return;
+    }
+
+    setSelectedHistoryId(analysisId);
+    setSavedDetail(null);
+    setSavedDetailError("");
+    setIsSavedDetailLoading(true);
+
+    try {
+      const detail = await getAnalysisDetail(analysisId);
+      setSavedDetail(detail);
+    } catch (detailError) {
+      setSavedDetailError(
+        detailError instanceof Error
+          ? detailError.message
+          : "Could not load the saved analysis.",
+      );
+    } finally {
+      setIsSavedDetailLoading(false);
+    }
+  }
+
+  function handleCloseSavedDetail() {
+    setSelectedHistoryId(null);
+    setSavedDetail(null);
+    setSavedDetailError("");
+  }
+
   return (
+
     <main className="app">
       <header className="header">
         <div>
@@ -150,6 +191,16 @@ function App() {
         total={historyTotal}
         isLoading={isHistoryLoading}
         error={historyError}
+        selectedId={selectedHistoryId}
+        isSelectionLoading={isSavedDetailLoading}
+        onSelect={handleHistorySelect}
+      />
+
+      <SavedAnalysisDetail
+        detail={savedDetail}
+        isLoading={isSavedDetailLoading}
+        error={savedDetailError}
+        onClose={handleCloseSavedDetail}
       />
     </main>
   );

@@ -21,6 +21,7 @@ import {
 vi.mock("./services/api.js", () => ({
   analyzeEmail: vi.fn(),
   getAnalysisHistory: vi.fn(),
+  getAnalysisDetail: vi.fn(),
 }));
 
 const analysisResult = {

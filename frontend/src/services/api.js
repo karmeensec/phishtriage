@@ -86,3 +86,44 @@ export async function getAnalysisHistory({
     clearTimeout(timeoutId);
   }
 }
+
+export async function getAnalysisDetail(analysisId) {
+  if (!Number.isInteger(analysisId) || analysisId < 1) {
+    throw new Error("Invalid analysis identifier.");
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/analyses/${analysisId}`,
+      {
+        method: "GET",
+        signal: controller.signal,
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.detail ?? "Could not load the saved analysis.",
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(
+        "The analysis-detail request timed out.",
+        { cause: error },
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+

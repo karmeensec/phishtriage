@@ -28,10 +28,13 @@ function formatUtcTimestamp(value) {
 }
 
 function HistoryPanel({
-  items,
+    items,
   total,
   isLoading,
   error,
+  selectedId,
+  isSelectionLoading,
+  onSelect,
 }) {
   return (
     <section className="history-panel">
@@ -74,6 +77,7 @@ function HistoryPanel({
                 <th>Risk</th>
                 <th>Findings</th>
                 <th>Analyzed</th>
+                <th>Action</th>
               </tr>
             </thead>
 
@@ -113,6 +117,19 @@ function HistoryPanel({
                       {formatUtcTimestamp(
                         item.created_at,
                       )}
+                    </td>
+
+                    <td>
+                        <button
+                            className="history-view-button"
+                            type="button"
+                            disabled={isSelectionLoading}
+                            onClick={() => onSelect(item.id)}
+                        >
+                            {selectedId === item.id
+                            ? "Selected"
+                            : "View"}
+                        </button>
                     </td>
                   </tr>
                 );
