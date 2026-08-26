@@ -273,3 +273,63 @@ def test_rejects_invalid_history_pagination() -> None:
         response.status_code == 422
         for response in invalid_limits
     )
+
+def test_returns_saved_analysis_detail() -> None:
+    file_content = PHISHING_EMAIL.read_bytes()
+
+    analysis_response = client.post(
+        "/api/v1/analyze",
+        files={
+            "file": (
+                "phishing_email.eml",
+                file_content,
+                "message/rfc822",
+            )
+        },
+    )
+
+    assert analysis_response.status_code == 200
+
+    analysis_id = analysis_response.json()[
+        "analysis_id"
+    ]
+
+    response = client.get(
+        f"/api/v1/analyses/{analysis_id}"
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["id"] == analysis_id
+    assert result["file_name"] == "phishing_email.eml"
+    assert result["risk_score"] == 100
+    assert result["risk_level"] == "critical"
+    assert result["finding_count"] == 9
+    assert len(result["findings"]) == 9
+    assert result["file_sha256"] == sha256(
+        file_content
+    ).hexdigest()
+
+    # Raw email content is never returned or retained.
+    assert "authentication_results" not in result
+    assert "urls" not in result
+    assert "attachments" not in result
+
+
+def test_returns_404_for_missing_analysis() -> None:
+    response = client.get(
+        "/api/v1/analyses/999999"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Analysis record was not found."
+    )
+
+
+def test_rejects_invalid_analysis_id() -> None:
+    response = client.get("/api/v1/analyses/0")
+
+    assert response.status_code == 422

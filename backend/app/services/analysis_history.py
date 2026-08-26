@@ -107,3 +107,16 @@ def list_analysis_records(
     ) or 0
 
     return records, total
+
+
+def get_analysis_record(
+    db: Session,
+    *,
+    analysis_id: int,
+) -> AnalysisRecord | None:
+    """Return one saved analysis by its identifier."""
+
+    return db.get(
+        AnalysisRecord,
+        analysis_id,
+    )

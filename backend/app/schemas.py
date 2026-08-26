@@ -44,6 +44,17 @@ class AnalysisSummary(BaseModel):
 
         return value.astimezone(timezone.utc)
 
+class AnalysisDetail(AnalysisSummary):
+    """Detailed saved analysis without raw email content."""
+
+    file_sha256: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[0-9a-f]{64}$",
+    )
+
+    findings: list[dict[str, object]]
+
 
 class AnalysisHistoryResponse(BaseModel):
     """Paginated analysis-history response."""
