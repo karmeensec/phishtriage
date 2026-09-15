@@ -223,3 +223,6 @@ backend/phishtriage.db-shm
 backend/phishtriage.db-wal
 
 node_modules
+
+# Local external email samples
+backend/tests/sample_emails/sample-*.eml
