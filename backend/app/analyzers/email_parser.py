@@ -189,6 +189,7 @@ def build_analysis_result(
 
     sender = str(message.get("From", ""))
     reply_to = str(message.get("Reply-To", ""))
+    return_path = str(message.get("Return-Path", ""))
 
     authentication_results = str(
         message.get("Authentication-Results", "")
@@ -204,6 +205,7 @@ def build_analysis_result(
     header_analysis = analyze_headers(
         sender=sender,
         reply_to=reply_to,
+        return_path=return_path,
         authentication_header=authentication_results,
         spam_confidence_header=spam_confidence_header,
     )
@@ -231,6 +233,7 @@ def build_analysis_result(
         "from": sender,
         "to": str(message.get("To", "")),
         "reply_to": reply_to,
+        "return_path": return_path,
         "date": str(message.get("Date", "")),
         "message_id": str(message.get("Message-ID", "")),
         "authentication_results": authentication_results,

@@ -21,9 +21,18 @@ UNVERIFIED_DMARC_RESULTS = {
     "neutral",
 }
 
+MULTI_LABEL_SUFFIXES = {
+    "co.uk",
+    "com.au",
+    "com.br",
+    "com.mx",
+    "co.nz",
+    "co.za",
+}
+
 
 def extract_email_domain(header_value: str) -> str | None:
-    """Extract and normalize the domain from an email header."""
+    """Extract and normalize an email domain."""
 
     _, email_address = parseaddr(header_value)
 
@@ -34,6 +43,37 @@ def extract_email_domain(header_value: str) -> str | None:
     domain = domain.strip().lower().rstrip(".")
 
     return domain or None
+
+
+def organizational_domain(domain: str) -> str:
+    """Return the main organizational portion of a domain."""
+
+    normalized = domain.lower().rstrip(".")
+    labels = normalized.split(".")
+
+    if len(labels) < 2:
+        return normalized
+
+    last_two = ".".join(labels[-2:])
+
+    if (
+        last_two in MULTI_LABEL_SUFFIXES
+        and len(labels) >= 3
+    ):
+        return ".".join(labels[-3:])
+
+    return last_two
+
+
+def domains_are_related(
+    first_domain: str,
+    second_domain: str,
+) -> bool:
+    """Check whether two domains belong to the same organization."""
+
+    return organizational_domain(
+        first_domain
+    ) == organizational_domain(second_domain)
 
 
 def parse_authentication_results(
@@ -71,11 +111,13 @@ def analyze_headers(
     reply_to: str,
     authentication_header: str,
     spam_confidence_header: str = "",
+    return_path: str = "",
 ) -> dict[str, Any]:
     """Analyze sender identity and authentication headers."""
 
     sender_domain = extract_email_domain(sender)
     reply_to_domain = extract_email_domain(reply_to)
+    return_path_domain = extract_email_domain(return_path)
 
     authentication = parse_authentication_results(
         authentication_header
@@ -90,7 +132,10 @@ def analyze_headers(
     if (
         sender_domain
         and reply_to_domain
-        and sender_domain != reply_to_domain
+        and not domains_are_related(
+            sender_domain,
+            reply_to_domain,
+        )
     ):
         findings.append(
             {
@@ -103,6 +148,29 @@ def analyze_headers(
                 "evidence": {
                     "sender_domain": sender_domain,
                     "reply_to_domain": reply_to_domain,
+                },
+            }
+        )
+
+    if (
+        sender_domain
+        and return_path_domain
+        and not domains_are_related(
+            sender_domain,
+            return_path_domain,
+        )
+    ):
+        findings.append(
+            {
+                "rule_id": "HDR-RETURN-PATH",
+                "title": (
+                    "Sender and Return-Path domains do not match"
+                ),
+                "severity": "medium",
+                "score": 15,
+                "evidence": {
+                    "sender_domain": sender_domain,
+                    "return_path_domain": return_path_domain,
                 },
             }
         )
@@ -183,6 +251,7 @@ def analyze_headers(
     return {
         "sender_domain": sender_domain,
         "reply_to_domain": reply_to_domain,
+        "return_path_domain": return_path_domain,
         "authentication": authentication,
         "spam_confidence_level": spam_confidence_level,
         "findings": findings,

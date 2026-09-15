@@ -90,3 +90,24 @@ def test_detects_unverified_dmarc_and_high_scl() -> None:
         "HDR-DMARC-UNVERIFIED",
         "HDR-SCL",
     }
+
+
+def test_detects_return_path_domain_mismatch() -> None:
+    result = analyze_headers(
+        sender="Bradesco <infomail@bradesco.com.br>",
+        reply_to="",
+        return_path=(
+            "root@unrelated-mail-server.example"
+        ),
+        authentication_header=(
+            "spf=none; dkim=none; dmarc=fail"
+        ),
+    )
+
+    rule_ids = {
+        finding["rule_id"]
+        for finding in result["findings"]
+    }
+
+    assert "HDR-RETURN-PATH" in rule_ids
+    assert "HDR-DMARC" in rule_ids
