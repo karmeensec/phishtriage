@@ -71,3 +71,20 @@ def test_unicode_text_is_normalized() -> None:
     )
 
     assert normalized == "urgent account notice"
+
+
+def test_detects_cryptocurrency_lure_once() -> None:
+    result = analyze_body(
+        subject="Exclusive allocation",
+        body=(
+            "Review this cryptocurrency allocation "
+            "and claim your tokens."
+        ),
+    )
+
+    assert get_rule_ids(result) == {
+        "BODY-FINANCIAL-LURE",
+    }
+
+    assert len(result["findings"]) == 1
+    assert result["findings"][0]["score"] == 15

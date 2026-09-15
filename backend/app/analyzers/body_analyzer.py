@@ -68,6 +68,25 @@ BODY_RULES = [
             "follow this link",
         },
     },
+
+        {
+        "rule_id": "BODY-FINANCIAL-LURE",
+        "title": (
+            "Email uses a financial or cryptocurrency lure"
+        ),
+        "severity": "medium",
+        "score": 15,
+        "phrases": {
+            "claim your tokens",
+            "crypto allocation",
+            "cryptocurrency allocation",
+            "digital asset reward",
+            "exclusive allocation",
+            "guaranteed returns",
+            "investment opportunity",
+            "wallet verification",
+        },
+    },
 ]
 
 
