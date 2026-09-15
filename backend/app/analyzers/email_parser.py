@@ -189,14 +189,23 @@ def build_analysis_result(
 
     sender = str(message.get("From", ""))
     reply_to = str(message.get("Reply-To", ""))
+
     authentication_results = str(
         message.get("Authentication-Results", "")
+    )
+
+    spam_confidence_header = str(
+        message.get(
+            "X-MS-Exchange-Organization-SCL",
+            "",
+        )
     )
 
     header_analysis = analyze_headers(
         sender=sender,
         reply_to=reply_to,
         authentication_header=authentication_results,
+        spam_confidence_header=spam_confidence_header,
     )
 
     url_analysis = analyze_urls(email_urls)

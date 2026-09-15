@@ -68,3 +68,25 @@ def test_detects_authentication_failures() -> None:
         finding["severity"] == "high"
         for finding in result["findings"]
     )
+
+
+
+def test_detects_unverified_dmarc_and_high_scl() -> None:
+    result = analyze_headers(
+        sender="Newsletter <news@example.com>",
+        reply_to="",
+        authentication_header=(
+            "spf=pass; dkim=pass; dmarc=bestguesspass"
+        ),
+        spam_confidence_header="9",
+    )
+
+    rule_ids = {
+        finding["rule_id"]
+        for finding in result["findings"]
+    }
+
+    assert rule_ids == {
+        "HDR-DMARC-UNVERIFIED",
+        "HDR-SCL",
+    }
