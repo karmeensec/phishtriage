@@ -1,7 +1,6 @@
 """API endpoints for analysis history."""
 
 from typing import Annotated
-from backend.app.models import AnalysisRecord
 
 from fastapi import (
     APIRouter,
@@ -14,7 +13,9 @@ from fastapi import (
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from backend.app.config import public_demo_mode_enabled
 from backend.app.database import get_db
+from backend.app.models import AnalysisRecord
 from backend.app.schemas import (
     AnalysisDetail,
     AnalysisHistoryResponse,
@@ -48,6 +49,15 @@ def get_analysis_history(
 ) -> AnalysisHistoryResponse:
     """Return recent analysis summaries with pagination."""
 
+    if public_demo_mode_enabled():
+        return AnalysisHistoryResponse(
+            items=[],
+            total=0,
+            limit=limit,
+            offset=offset,
+            persistence_enabled=False,
+        )
+
     try:
         records, total = list_analysis_records(
             db,
@@ -67,6 +77,7 @@ def get_analysis_history(
         total=total,
         limit=limit,
         offset=offset,
+        persistence_enabled=True,
     )
 
 
@@ -82,6 +93,15 @@ def get_analysis_detail(
     ],
 ) -> AnalysisRecord:
     """Return one saved analysis without raw email content."""
+
+    if public_demo_mode_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Analysis history is unavailable "
+                "in public demo mode."
+            ),
+        )
 
     try:
         record = get_analysis_record(

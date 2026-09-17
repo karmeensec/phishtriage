@@ -24,6 +24,8 @@ function App() {
 
     const [selectedHistoryId, setSelectedHistoryId] =
     useState(null);
+    const [isHistoryEnabled, setIsHistoryEnabled] =
+    useState(true);
   const [savedDetail, setSavedDetail] = useState(null);
   const [savedDetailError, setSavedDetailError] =
     useState("");
@@ -44,9 +46,12 @@ function App() {
         });
 
         if (!isCancelled) {
+          setIsHistoryEnabled(
+            history.persistence_enabled !== false,
+          );
           setHistoryItems(history.items);
           setHistoryTotal(history.total);
-        }
+}
       } catch (historyLoadError) {
         if (!isCancelled) {
           setHistoryError(
@@ -90,7 +95,14 @@ function App() {
       const analysisResult = await analyzeEmail(selectedFile);
 
       setResult(analysisResult);
-      setHistoryVersion((current) => current + 1);
+
+      if (analysisResult.persisted === false) {
+        setIsHistoryEnabled(false);
+        setSelectedHistoryId(null);
+        setSavedDetail(null);
+      } else {
+        setHistoryVersion((current) => current + 1);
+      }
     } catch (analysisError) {
       setError(
         analysisError instanceof Error
@@ -186,22 +198,37 @@ function App() {
 
       {result && <AnalysisReport result={result} />}
 
-      <HistoryPanel
-        items={historyItems}
-        total={historyTotal}
-        isLoading={isHistoryLoading}
-        error={historyError}
-        selectedId={selectedHistoryId}
-        isSelectionLoading={isSavedDetailLoading}
-        onSelect={handleHistorySelect}
-      />
+      {isHistoryEnabled ? (
+  <>
+        <HistoryPanel
+          items={historyItems}
+          total={historyTotal}
+          isLoading={isHistoryLoading}
+          error={historyError}
+          selectedId={selectedHistoryId}
+          isSelectionLoading={isSavedDetailLoading}
+          onSelect={handleHistorySelect}
+        />
 
-      <SavedAnalysisDetail
-        detail={savedDetail}
-        isLoading={isSavedDetailLoading}
-        error={savedDetailError}
-        onClose={handleCloseSavedDetail}
-      />
+        <SavedAnalysisDetail
+          detail={savedDetail}
+          isLoading={isSavedDetailLoading}
+          error={savedDetailError}
+          onClose={handleCloseSavedDetail}
+        />
+      </>
+    ) : (
+      <section className="history-panel">
+        <p className="eyebrow">PRIVACY MODE</p>
+        <h2>Public demo protection</h2>
+
+        <p className="history-message">
+          Uploaded emails are analyzed temporarily and are
+          not saved. Analysis history is disabled in this
+          public demo.
+        </p>
+      </section>
+    )}
     </main>
   );
 }

@@ -65,11 +65,12 @@ describe("App", () => {
     vi.clearAllMocks();
 
     getAnalysisHistory.mockResolvedValue({
-      items: [],
-      total: 0,
-      limit: 10,
-      offset: 0,
-    });
+  items: [],
+  total: 0,
+  limit: 10,
+  offset: 0,
+  persistence_enabled: true,
+});
 
   });
 

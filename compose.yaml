@@ -5,6 +5,7 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       DATABASE_URL: sqlite:////data/phishtriage.db
+      PUBLIC_DEMO_MODE: "false"
     volumes:
       - phishtriage-data:/data
     ports:

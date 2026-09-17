@@ -16,6 +16,7 @@ from backend.app.analyzers.email_parser import (
     EmailValidationError,
     parse_email_bytes,
 )
+from backend.app.config import public_demo_mode_enabled
 from backend.app.database import get_db
 from backend.app.services.analysis_history import (
     save_analysis_record,
@@ -36,15 +37,13 @@ async def analyze_email(
     ],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
-    """Analyze an email and save a minimized history record."""
+    """Analyze an email and optionally save safe history."""
 
     try:
-        # Read one extra byte so an oversized upload is detectable.
         file_content = await file.read(
             MAX_EMAIL_SIZE + 1
         )
     finally:
-        # Release the upload resource even when reading fails.
         await file.close()
 
     if len(file_content) > MAX_EMAIL_SIZE:
@@ -59,11 +58,17 @@ async def analyze_email(
             file_name=file.filename or "",
         )
     except EmailValidationError as error:
-        # Return only controlled validation messages.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         ) from error
+
+    if public_demo_mode_enabled():
+        return {
+            **analysis_result,
+            "analysis_id": None,
+            "persisted": False,
+        }
 
     try:
         record = save_analysis_record(
@@ -73,7 +78,6 @@ async def analyze_email(
             analysis=analysis_result,
         )
     except SQLAlchemyError as error:
-        # Do not expose database details or credentials.
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=(
@@ -84,4 +88,5 @@ async def analyze_email(
     return {
         **analysis_result,
         "analysis_id": record.id,
+        "persisted": True,
     }

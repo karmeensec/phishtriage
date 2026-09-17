@@ -333,3 +333,68 @@ def test_rejects_invalid_analysis_id() -> None:
     response = client.get("/api/v1/analyses/0")
 
     assert response.status_code == 422
+
+def test_public_demo_does_not_persist_analysis(
+    monkeypatch: pytest.MonkeyPatch,
+    isolated_database: sessionmaker[Session],
+) -> None:
+    monkeypatch.setenv(
+        "PUBLIC_DEMO_MODE",
+        "true",
+    )
+
+    response = client.post(
+        "/api/v1/analyze",
+        files={
+            "file": (
+                "public_demo.eml",
+                PHISHING_EMAIL.read_bytes(),
+                "message/rfc822",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["analysis_id"] is None
+    assert result["persisted"] is False
+
+    with isolated_database() as session:
+        saved_record = session.scalar(
+            select(AnalysisRecord)
+        )
+
+    assert saved_record is None
+
+    history_response = client.get(
+        "/api/v1/analyses"
+    )
+
+    assert history_response.status_code == 200
+
+    history = history_response.json()
+
+    assert history["items"] == []
+    assert history["total"] == 0
+    assert history["persistence_enabled"] is False
+
+
+def test_public_demo_blocks_saved_detail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "PUBLIC_DEMO_MODE",
+        "true",
+    )
+
+    response = client.get(
+        "/api/v1/analyses/1"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Analysis history is unavailable "
+        "in public demo mode."
+    )
