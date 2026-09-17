@@ -1,3 +1,5 @@
+import { downloadJsonReport } from "../services/reportExport.js";
+
 const RISK_LEVELS = [
   "low",
   "medium",
@@ -39,11 +41,25 @@ function SavedAnalysisDetail({
     ? normalizeRiskLevel(detail.risk_level)
     : "unknown";
 
+  function handleJsonDownload() {
+    if (!detail) {
+      return;
+    }
+
+    downloadJsonReport(
+      detail,
+      detail.file_name,
+    );
+  }
+
   return (
     <section className="saved-detail result-panel">
       <div className="saved-detail-heading">
         <div>
-          <p className="eyebrow">SAVED INVESTIGATION</p>
+          <p className="eyebrow">
+            SAVED INVESTIGATION
+          </p>
+
           <h2>
             {detail
               ? `Analysis #${detail.id}`
@@ -51,13 +67,25 @@ function SavedAnalysisDetail({
           </h2>
         </div>
 
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={onClose}
-        >
-          Close
-        </button>
+        <div className="saved-detail-actions">
+          {detail && !isLoading && (
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={handleJsonDownload}
+            >
+              Download JSON report
+            </button>
+          )}
+
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       {isLoading && (
@@ -113,59 +141,76 @@ function SavedAnalysisDetail({
             <div className="findings-list">
               {detail.findings.length === 0 ? (
                 <p className="no-findings">
-                  No suspicious indicators were detected.
+                  No suspicious indicators were
+                  detected.
                 </p>
               ) : (
-                detail.findings.map((finding, index) => {
-                  const severity = normalizeRiskLevel(
-                    finding.severity,
-                  );
+                detail.findings.map(
+                  (finding, index) => {
+                    const severity =
+                      normalizeRiskLevel(
+                        finding.severity,
+                      );
 
-                  return (
-                    <article
-                      className="finding-card"
-                      key={`${finding.rule_id}-${index}`}
-                    >
-                      <div className="finding-heading">
-                        <div>
-                          <span className="rule-id">
-                            {finding.rule_id}
+                    return (
+                      <article
+                        className="finding-card"
+                        key={
+                          `${finding.rule_id}-${index}`
+                        }
+                      >
+                        <div className="finding-heading">
+                          <div>
+                            <span className="rule-id">
+                              {finding.rule_id}
+                            </span>
+
+                            <h4>{finding.title}</h4>
+                          </div>
+
+                          <span
+                            className={
+                              `severity severity-${severity}`
+                            }
+                          >
+                            {severity}
                           </span>
-                          <h4>{finding.title}</h4>
                         </div>
 
-                        <span
-                          className={
-                            `severity severity-${severity}`
-                          }
-                        >
-                          {severity}
-                        </span>
-                      </div>
+                        <div className="finding-score">
+                          Rule score: {finding.score}
+                        </div>
 
-                      <div className="finding-score">
-                        Rule score: {finding.score}
-                      </div>
+                        {finding.evidence && (
+                          <dl className="evidence">
+                            {Object.entries(
+                              finding.evidence,
+                            ).map(
+                              ([key, value]) => (
+                                <div key={key}>
+                                  <dt>
+                                    {key.replaceAll(
+                                      "_",
+                                      " ",
+                                    )}
+                                  </dt>
 
-                      {finding.evidence && (
-                        <dl className="evidence">
-                          {Object.entries(
-                            finding.evidence,
-                          ).map(([key, value]) => (
-                            <div key={key}>
-                              <dt>
-                                {key.replaceAll("_", " ")}
-                              </dt>
-                              <dd>
-                                {formatEvidenceValue(value)}
-                              </dd>
-                            </div>
-                          ))}
-                        </dl>
-                      )}
-                    </article>
-                  );
-                })
+                                  <dd>
+                                    {
+                                      formatEvidenceValue(
+                                        value,
+                                      )
+                                    }
+                                  </dd>
+                                </div>
+                              ),
+                            )}
+                          </dl>
+                        )}
+                      </article>
+                    );
+                  },
+                )
               )}
             </div>
           </section>

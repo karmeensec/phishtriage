@@ -563,3 +563,27 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+.report-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.saved-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .report-actions {
+    align-items: flex-start;
+  }
+
+  .saved-detail-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

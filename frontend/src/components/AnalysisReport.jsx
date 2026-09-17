@@ -1,14 +1,35 @@
-const RISK_LEVELS = ["low", "medium", "high", "critical"];
-const AUTH_RESULTS = ["pass", "fail", "neutral", "unknown"];
+import { downloadJsonReport } from "../services/reportExport.js";
+
+const RISK_LEVELS = [
+  "low",
+  "medium",
+  "high",
+  "critical",
+];
+
+const AUTH_RESULTS = [
+  "pass",
+  "fail",
+  "neutral",
+  "unknown",
+];
 
 function normalizeRiskLevel(level) {
   const normalized = String(level).toLowerCase();
-  return RISK_LEVELS.includes(normalized) ? normalized : "unknown";
+
+  return RISK_LEVELS.includes(normalized)
+    ? normalized
+    : "unknown";
 }
 
 function normalizeAuthResult(result) {
-  const normalized = String(result ?? "unknown").toLowerCase();
-  return AUTH_RESULTS.includes(normalized) ? normalized : "unknown";
+  const normalized = String(
+    result ?? "unknown",
+  ).toLowerCase();
+
+  return AUTH_RESULTS.includes(normalized)
+    ? normalized
+    : "unknown";
 }
 
 function formatEvidenceValue(value) {
@@ -26,11 +47,22 @@ function formatEvidenceValue(value) {
 function AnalysisReport({ result }) {
   const risk = result.risk_assessment;
   const riskLevel = normalizeRiskLevel(risk.level);
+
   const authentication =
     result.header_analysis?.authentication ?? {};
 
+  function handleJsonDownload() {
+    downloadJsonReport(
+      result,
+      result.file,
+    );
+  }
+
   return (
-    <section className="result-panel" aria-live="polite">
+    <section
+      className="result-panel"
+      aria-live="polite"
+    >
       <div className="report-heading">
         <div>
           <p className="eyebrow">ANALYSIS COMPLETE</p>
@@ -38,10 +70,20 @@ function AnalysisReport({ result }) {
           <p className="report-file">{result.file}</p>
         </div>
 
-        <div className={`risk-score risk-${riskLevel}`}>
-          <strong>{risk.score}</strong>
-          <span>/ 100</span>
-          <small>{riskLevel}</small>
+        <div className="report-actions">
+          <div className={`risk-score risk-${riskLevel}`}>
+            <strong>{risk.score}</strong>
+            <span>/ 100</span>
+            <small>{riskLevel}</small>
+          </div>
+
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={handleJsonDownload}
+          >
+            Download JSON report
+          </button>
         </div>
       </div>
 
@@ -53,18 +95,25 @@ function AnalysisReport({ result }) {
 
         <div className="summary-card">
           <span>High severity</span>
-          <strong>{risk.severity_counts?.high ?? 0}</strong>
+          <strong>
+            {risk.severity_counts?.high ?? 0}
+          </strong>
         </div>
 
         <div className="summary-card">
           <span>URLs analyzed</span>
-          <strong>{result.url_analysis?.analyzed_count ?? 0}</strong>
+          <strong>
+            {result.url_analysis?.analyzed_count ?? 0}
+          </strong>
         </div>
 
         <div className="summary-card">
           <span>Attachments</span>
           <strong>
-            {result.attachment_analysis?.analyzed_count ?? 0}
+            {
+              result.attachment_analysis
+                ?.analyzed_count ?? 0
+            }
           </strong>
         </div>
       </div>
@@ -85,7 +134,9 @@ function AnalysisReport({ result }) {
 
           <div>
             <dt>Reply-To</dt>
-            <dd>{result.reply_to || "Not provided"}</dd>
+            <dd>
+              {result.reply_to || "Not provided"}
+            </dd>
           </div>
 
           <div>
@@ -96,16 +147,20 @@ function AnalysisReport({ result }) {
           <div>
             <dt>Sender domain</dt>
             <dd>
-              {result.header_analysis?.sender_domain ||
-                "Not available"}
+              {
+                result.header_analysis
+                  ?.sender_domain || "Not available"
+              }
             </dd>
           </div>
 
           <div>
             <dt>Reply-To domain</dt>
             <dd>
-              {result.header_analysis?.reply_to_domain ||
-                "Not available"}
+              {
+                result.header_analysis
+                  ?.reply_to_domain || "Not available"
+              }
             </dd>
           </div>
         </dl>
@@ -115,20 +170,31 @@ function AnalysisReport({ result }) {
         <h3>Email authentication</h3>
 
         <div className="authentication-grid">
-          {["spf", "dkim", "dmarc"].map((mechanism) => {
-            const authResult = normalizeAuthResult(
-              authentication[mechanism],
-            );
+          {["spf", "dkim", "dmarc"].map(
+            (mechanism) => {
+              const authResult =
+                normalizeAuthResult(
+                  authentication[mechanism],
+                );
 
-            return (
-              <div className="authentication-card" key={mechanism}>
-                <span>{mechanism.toUpperCase()}</span>
-                <strong className={`auth-${authResult}`}>
-                  {authResult}
-                </strong>
-              </div>
-            );
-          })}
+              return (
+                <div
+                  className="authentication-card"
+                  key={mechanism}
+                >
+                  <span>
+                    {mechanism.toUpperCase()}
+                  </span>
+
+                  <strong
+                    className={`auth-${authResult}`}
+                  >
+                    {authResult}
+                  </strong>
+                </div>
+              );
+            },
+          )}
         </div>
       </section>
 
@@ -141,50 +207,70 @@ function AnalysisReport({ result }) {
               No suspicious indicators were detected.
             </p>
           ) : (
-            result.findings.map((finding, index) => {
-              const severity = normalizeRiskLevel(
-                finding.severity,
-              );
+            result.findings.map(
+              (finding, index) => {
+                const severity =
+                  normalizeRiskLevel(
+                    finding.severity,
+                  );
 
-              return (
-                <article
-                  className="finding-card"
-                  key={`${finding.rule_id}-${index}`}
-                >
-                  <div className="finding-heading">
-                    <div>
-                      <span className="rule-id">
-                        {finding.rule_id}
+                return (
+                  <article
+                    className="finding-card"
+                    key={
+                      `${finding.rule_id}-${index}`
+                    }
+                  >
+                    <div className="finding-heading">
+                      <div>
+                        <span className="rule-id">
+                          {finding.rule_id}
+                        </span>
+
+                        <h4>{finding.title}</h4>
+                      </div>
+
+                      <span
+                        className={
+                          `severity severity-${severity}`
+                        }
+                      >
+                        {severity}
                       </span>
-                      <h4>{finding.title}</h4>
                     </div>
 
-                    <span
-                      className={`severity severity-${severity}`}
-                    >
-                      {severity}
-                    </span>
-                  </div>
+                    <div className="finding-score">
+                      Rule score: {finding.score}
+                    </div>
 
-                  <div className="finding-score">
-                    Rule score: {finding.score}
-                  </div>
-
-                  {finding.evidence && (
-                    <dl className="evidence">
-                      {Object.entries(finding.evidence).map(
-                        ([key, value]) => (
+                    {finding.evidence && (
+                      <dl className="evidence">
+                        {Object.entries(
+                          finding.evidence,
+                        ).map(([key, value]) => (
                           <div key={key}>
-                            <dt>{key.replaceAll("_", " ")}</dt>
-                            <dd>{formatEvidenceValue(value)}</dd>
+                            <dt>
+                              {key.replaceAll(
+                                "_",
+                                " ",
+                              )}
+                            </dt>
+
+                            <dd>
+                              {
+                                formatEvidenceValue(
+                                  value,
+                                )
+                              }
+                            </dd>
                           </div>
-                        ),
-                      )}
-                    </dl>
-                  )}
-                </article>
-              );
-            })
+                        ))}
+                      </dl>
+                    )}
+                  </article>
+                );
+              },
+            )
           )}
         </div>
       </section>
