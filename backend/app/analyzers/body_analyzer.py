@@ -3,6 +3,8 @@ import unicodedata
 from typing import Any
 
 
+MIN_OBFUSCATION_CHARACTERS = 3
+
 BODY_RULES = [
     {
         "rule_id": "BODY-URGENCY",
@@ -68,8 +70,7 @@ BODY_RULES = [
             "follow this link",
         },
     },
-
-        {
+    {
         "rule_id": "BODY-FINANCIAL-LURE",
         "title": (
             "Email uses a financial or cryptocurrency lure"
@@ -85,15 +86,57 @@ BODY_RULES = [
             "guaranteed returns",
             "investment opportunity",
             "wallet verification",
+            "student loan forgiveness",
+            "loan forgiveness",
+            "debt forgiveness",
+            "debt relief",
+            "eligible for forgiveness",
         },
     },
 ]
 
 
+def is_format_character(character: str) -> bool:
+    """Return whether a character is invisible formatting."""
+
+    return unicodedata.category(character) == "Cf"
+
+
+def count_embedded_format_characters(text: str) -> int:
+    """Count invisible characters inserted inside words."""
+
+    count = 0
+
+    for index, character in enumerate(text):
+        if not is_format_character(character):
+            continue
+
+        if index == 0 or index == len(text) - 1:
+            continue
+
+        previous_character = text[index - 1]
+        next_character = text[index + 1]
+
+        if (
+            previous_character.isalnum()
+            and next_character.isalnum()
+        ):
+            count += 1
+
+    return count
+
+
 def normalize_text(text: str) -> str:
-    """Normalize untrusted text for consistent phrase matching."""
+    """Normalize text and remove invisible evasion characters."""
 
     normalized = unicodedata.normalize("NFKC", text)
+
+    normalized = "".join(
+        character
+        for character in normalized
+        if not is_format_character(character)
+    )
+
     normalized = normalized.casefold()
 
     return re.sub(r"\s+", " ", normalized).strip()
@@ -105,11 +148,38 @@ def analyze_body(
 ) -> dict[str, Any]:
     """Analyze email text for social-engineering language."""
 
-    combined_text = normalize_text(
-        f"{subject}\n{body}"
+    raw_combined_text = f"{subject}\n{body}"
+
+    embedded_character_count = (
+        count_embedded_format_characters(
+            raw_combined_text
+        )
     )
 
+    combined_text = normalize_text(raw_combined_text)
+
     findings: list[dict[str, Any]] = []
+
+    if (
+        embedded_character_count
+        >= MIN_OBFUSCATION_CHARACTERS
+    ):
+        findings.append(
+            {
+                "rule_id": "BODY-OBFUSCATION",
+                "title": (
+                    "Email uses invisible characters "
+                    "to obscure text"
+                ),
+                "severity": "medium",
+                "score": 20,
+                "evidence": {
+                    "embedded_invisible_character_count": (
+                        embedded_character_count
+                    ),
+                },
+            }
+        )
 
     for rule in BODY_RULES:
         matched_phrases = sorted(

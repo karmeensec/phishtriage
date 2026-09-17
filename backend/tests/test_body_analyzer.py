@@ -88,3 +88,45 @@ def test_detects_cryptocurrency_lure_once() -> None:
 
     assert len(result["findings"]) == 1
     assert result["findings"][0]["score"] == 15
+
+
+def test_removes_invisible_format_characters() -> None:
+    obfuscated_text = (
+        "i\u200cm\u200cm\u200ce\u200cd\u200ci"
+        "\u200ca\u200ct\u200ce\u200cl\u200cy"
+    )
+
+    assert normalize_text(obfuscated_text) == (
+        "immediately"
+    )
+
+
+def test_detects_invisible_text_obfuscation() -> None:
+    result = analyze_body(
+        subject="Student loan notice",
+        body=(
+            "Your student loans are eligible for "
+            "forgiveness. Please respond "
+            "i\u200cm\u200cm\u200ce\u200cd\u200ci"
+            "\u200ca\u200ct\u200ce\u200cl\u200cy."
+        ),
+    )
+
+    assert get_rule_ids(result) == {
+        "BODY-OBFUSCATION",
+        "BODY-URGENCY",
+        "BODY-FINANCIAL-LURE",
+    }
+
+    obfuscation_finding = next(
+        finding
+        for finding in result["findings"]
+        if finding["rule_id"] == "BODY-OBFUSCATION"
+    )
+
+    assert (
+        obfuscation_finding["evidence"][
+            "embedded_invisible_character_count"
+        ]
+        >= 3
+    )
