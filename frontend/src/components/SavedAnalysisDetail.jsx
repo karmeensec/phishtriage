@@ -1,4 +1,5 @@
 import { downloadJsonReport } from "../services/reportExport.js";
+import { downloadPdfReport } from "../services/reportPdf.js";
 
 const RISK_LEVELS = [
   "low",
@@ -52,6 +53,17 @@ function SavedAnalysisDetail({
     );
   }
 
+  function handlePdfDownload() {
+  if (!detail) {
+    return;
+  }
+
+  downloadPdfReport(
+    detail,
+    detail.file_name,
+  );
+}
+
   return (
     <section className="saved-detail result-panel">
       <div className="saved-detail-heading">
@@ -77,6 +89,16 @@ function SavedAnalysisDetail({
               Download JSON report
             </button>
           )}
+
+                  {detail && !isLoading && (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={handlePdfDownload}
+          >
+            Download PDF report
+          </button>
+        )}
 
           <button
             className="secondary-button"

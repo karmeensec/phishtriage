@@ -1,4 +1,5 @@
 import { downloadJsonReport } from "../services/reportExport.js";
+import { downloadPdfReport } from "../services/reportPdf.js";
 
 const RISK_LEVELS = [
   "low",
@@ -58,6 +59,13 @@ function AnalysisReport({ result }) {
     );
   }
 
+  function handlePdfDownload() {
+  downloadPdfReport(
+    result,
+    result.file,
+  );
+}
+
   return (
     <section
       className="result-panel"
@@ -83,6 +91,14 @@ function AnalysisReport({ result }) {
             onClick={handleJsonDownload}
           >
             Download JSON report
+          </button>
+
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={handlePdfDownload}
+            >
+            Download PDF report
           </button>
         </div>
       </div>
