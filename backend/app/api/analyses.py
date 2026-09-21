@@ -1,6 +1,6 @@
 """API endpoints for analysis history."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
@@ -46,8 +46,21 @@ def get_analysis_history(
         int,
         Query(ge=0),
     ] = 0,
+    search: Annotated[
+        str | None,
+        Query(max_length=200),
+    ] = None,
+    risk_level: Annotated[
+        Literal[
+            "low",
+            "medium",
+            "high",
+            "critical",
+        ] | None,
+        Query(),
+    ] = None,
 ) -> AnalysisHistoryResponse:
-    """Return recent analysis summaries with pagination."""
+    """Return filtered analysis summaries with pagination."""
 
     if public_demo_mode_enabled():
         return AnalysisHistoryResponse(
@@ -63,6 +76,8 @@ def get_analysis_history(
             db,
             limit=limit,
             offset=offset,
+            search=search,
+            risk_level=risk_level,
         )
     except SQLAlchemyError as error:
         raise HTTPException(

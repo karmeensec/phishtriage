@@ -49,14 +49,29 @@ export async function analyzeEmail(file) {
 export async function getAnalysisHistory({
   limit = 10,
   offset = 0,
+  search = "",
+  riskLevel = "",
 } = {}) {
   const query = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
   });
 
+  const normalizedSearch = search.trim();
+
+  if (normalizedSearch) {
+    query.set("search", normalizedSearch);
+  }
+
+  if (riskLevel) {
+    query.set("risk_level", riskLevel);
+  }
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    15_000,
+  );
 
   try {
     const response = await fetch(
@@ -71,7 +86,8 @@ export async function getAnalysisHistory({
 
     if (!response.ok) {
       throw new Error(
-        data.detail ?? "Could not load analysis history.",
+        data.detail ??
+          "Could not load analysis history.",
       );
     }
 

@@ -27,6 +27,11 @@ PHISHING_EMAIL = (
     / "phishing_email.eml"
 )
 
+LEGITIMATE_EMAIL = (
+    SAMPLE_DIRECTORY
+    / "legitimate_email.eml"
+)
+
 @pytest.fixture(autouse=True)
 def isolated_database(
 ) -> Generator[sessionmaker[Session], None, None]:
@@ -398,3 +403,107 @@ def test_public_demo_blocks_saved_detail(
         "Analysis history is unavailable "
         "in public demo mode."
     )
+
+
+def test_searches_analysis_history() -> None:
+    file_content = PHISHING_EMAIL.read_bytes()
+
+    for file_name in [
+        "invoice_alert.eml",
+        "account_warning.eml",
+    ]:
+        response = client.post(
+            "/api/v1/analyze",
+            files={
+                "file": (
+                    file_name,
+                    file_content,
+                    "message/rfc822",
+                )
+            },
+        )
+
+        assert response.status_code == 200
+
+    response = client.get(
+        "/api/v1/analyses",
+        params={
+            "search": "INVOICE",
+        },
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["total"] == 1
+    assert len(result["items"]) == 1
+    assert result["items"][0]["file_name"] == (
+        "invoice_alert.eml"
+    )
+
+
+def test_filters_history_by_risk_level() -> None:
+    phishing_response = client.post(
+        "/api/v1/analyze",
+        files={
+            "file": (
+                "dangerous.eml",
+                PHISHING_EMAIL.read_bytes(),
+                "message/rfc822",
+            )
+        },
+    )
+
+    legitimate_response = client.post(
+        "/api/v1/analyze",
+        files={
+            "file": (
+                "safe.eml",
+                LEGITIMATE_EMAIL.read_bytes(),
+                "message/rfc822",
+            )
+        },
+    )
+
+    assert phishing_response.status_code == 200
+    assert legitimate_response.status_code == 200
+
+    response = client.get(
+        "/api/v1/analyses",
+        params={
+            "risk_level": "critical",
+        },
+    )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert result["total"] == 1
+    assert len(result["items"]) == 1
+    assert result["items"][0]["file_name"] == (
+        "dangerous.eml"
+    )
+    assert result["items"][0]["risk_level"] == (
+        "critical"
+    )
+
+
+def test_rejects_invalid_history_filters() -> None:
+    invalid_risk_response = client.get(
+        "/api/v1/analyses",
+        params={
+            "risk_level": "extreme",
+        },
+    )
+
+    long_search_response = client.get(
+        "/api/v1/analyses",
+        params={
+            "search": "A" * 201,
+        },
+    )
+
+    assert invalid_risk_response.status_code == 422
+    assert long_search_response.status_code == 422

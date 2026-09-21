@@ -1,36 +1,84 @@
 import { useEffect, useState } from "react";
+
 import AnalysisReport from "./components/AnalysisReport.jsx";
 import HistoryPanel from "./components/HistoryPanel.jsx";
+import SavedAnalysisDetail from "./components/SavedAnalysisDetail.jsx";
 import {
   analyzeEmail,
   getAnalysisDetail,
   getAnalysisHistory,
 } from "./services/api.js";
+
 import "./App.css";
-import SavedAnalysisDetail from "./components/SavedAnalysisDetail.jsx";
+
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] =
+    useState(false);
 
-  const [historyItems, setHistoryItems] = useState([]);
-  const [historyTotal, setHistoryTotal] = useState(0);
-  const [historyError, setHistoryError] = useState("");
+  const [historyItems, setHistoryItems] =
+    useState([]);
+
+  const [historyTotal, setHistoryTotal] =
+    useState(0);
+
+  const [historyError, setHistoryError] =
+    useState("");
+
   const [isHistoryLoading, setIsHistoryLoading] =
     useState(true);
-  const [historyVersion, setHistoryVersion] = useState(0);
 
-    const [selectedHistoryId, setSelectedHistoryId] =
-    useState(null);
-    const [isHistoryEnabled, setIsHistoryEnabled] =
+  const [historyVersion, setHistoryVersion] =
+    useState(0);
+
+  const [isHistoryEnabled, setIsHistoryEnabled] =
     useState(true);
-  const [savedDetail, setSavedDetail] = useState(null);
-  const [savedDetailError, setSavedDetailError] =
+
+  const [historySearch, setHistorySearch] =
     useState("");
-  const [isSavedDetailLoading, setIsSavedDetailLoading] =
-    useState(false);
+
+  const [
+    debouncedHistorySearch,
+    setDebouncedHistorySearch,
+  ] = useState("");
+
+  const [historyRiskLevel, setHistoryRiskLevel] =
+    useState("");
+
+  const [
+    selectedHistoryId,
+    setSelectedHistoryId,
+  ] = useState(null);
+
+  const [savedDetail, setSavedDetail] =
+    useState(null);
+
+  const [
+    savedDetailError,
+    setSavedDetailError,
+  ] = useState("");
+
+  const [
+    isSavedDetailLoading,
+    setIsSavedDetailLoading,
+  ] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedHistorySearch(
+        historySearch.trim(),
+      );
+    }, 350);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [historySearch]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -40,18 +88,22 @@ function App() {
       setHistoryError("");
 
       try {
-        const history = await getAnalysisHistory({
-          limit: 10,
-          offset: 0,
-        });
+        const history =
+          await getAnalysisHistory({
+            limit: 10,
+            offset: 0,
+            search: debouncedHistorySearch,
+            riskLevel: historyRiskLevel,
+          });
 
         if (!isCancelled) {
           setIsHistoryEnabled(
             history.persistence_enabled !== false,
           );
+
           setHistoryItems(history.items);
           setHistoryTotal(history.total);
-}
+        }
       } catch (historyLoadError) {
         if (!isCancelled) {
           setHistoryError(
@@ -72,10 +124,15 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [historyVersion]);
+  }, [
+    historyVersion,
+    debouncedHistorySearch,
+    historyRiskLevel,
+  ]);
 
   function handleFileChange(event) {
-    const file = event.target.files[0] ?? null;
+    const file =
+      event.target.files[0] ?? null;
 
     setSelectedFile(file);
     setResult(null);
@@ -92,7 +149,8 @@ function App() {
     setError("");
 
     try {
-      const analysisResult = await analyzeEmail(selectedFile);
+      const analysisResult =
+        await analyzeEmail(selectedFile);
 
       setResult(analysisResult);
 
@@ -101,7 +159,9 @@ function App() {
         setSelectedHistoryId(null);
         setSavedDetail(null);
       } else {
-        setHistoryVersion((current) => current + 1);
+        setHistoryVersion(
+          (current) => current + 1,
+        );
       }
     } catch (analysisError) {
       setError(
@@ -114,7 +174,9 @@ function App() {
     }
   }
 
-  async function handleHistorySelect(analysisId) {
+  async function handleHistorySelect(
+    analysisId,
+  ) {
     if (isSavedDetailLoading) {
       return;
     }
@@ -125,7 +187,9 @@ function App() {
     setIsSavedDetailLoading(true);
 
     try {
-      const detail = await getAnalysisDetail(analysisId);
+      const detail =
+        await getAnalysisDetail(analysisId);
+
       setSavedDetail(detail);
     } catch (detailError) {
       setSavedDetailError(
@@ -144,30 +208,56 @@ function App() {
     setSavedDetailError("");
   }
 
-  return (
+  function handleHistorySearchChange(value) {
+    setHistorySearch(value);
+    handleCloseSavedDetail();
+  }
 
+  function handleRiskLevelChange(value) {
+    setHistoryRiskLevel(value);
+    handleCloseSavedDetail();
+  }
+
+  function handleClearHistoryFilters() {
+    setHistorySearch("");
+    setDebouncedHistorySearch("");
+    setHistoryRiskLevel("");
+    handleCloseSavedDetail();
+  }
+
+  return (
     <main className="app">
       <header className="header">
         <div>
-          <p className="eyebrow">SECURITY OPERATIONS</p>
+          <p className="eyebrow">
+            SECURITY OPERATIONS
+          </p>
+
           <h1>PhishTriage</h1>
+
           <p className="subtitle">
-            Automated phishing email analysis and incident triage
+            Automated phishing email analysis and
+            incident triage
           </p>
         </div>
 
-        <span className="status">System Online</span>
+        <span className="status">
+          System Online
+        </span>
       </header>
 
       <section className="upload-panel">
         <h2>Analyze suspicious email</h2>
+
         <p>
-          Upload an email file to inspect its headers, URLs,
-          attachments, language, and authentication results.
+          Upload an email file to inspect its headers,
+          URLs, attachments, language, and
+          authentication results.
         </p>
 
         <label className="file-input">
           <span>Select an .eml file</span>
+
           <input
             type="file"
             accept=".eml,message/rfc822"
@@ -177,58 +267,84 @@ function App() {
 
         {selectedFile && (
           <div className="selected-file">
-            Selected: <strong>{selectedFile.name}</strong>
+            Selected:{" "}
+            <strong>{selectedFile.name}</strong>
           </div>
         )}
 
         <button
           type="button"
-          disabled={!selectedFile || isAnalyzing}
+          disabled={
+            !selectedFile || isAnalyzing
+          }
           onClick={handleAnalyze}
         >
-          {isAnalyzing ? "Analyzing…" : "Analyze Email"}
+          {isAnalyzing
+            ? "Analyzing…"
+            : "Analyze Email"}
         </button>
 
         {error && (
-          <div className="error-message" role="alert">
+          <div
+            className="error-message"
+            role="alert"
+          >
             {error}
           </div>
         )}
       </section>
 
-      {result && <AnalysisReport result={result} />}
+      {result && (
+        <AnalysisReport result={result} />
+      )}
 
       {isHistoryEnabled ? (
-  <>
-        <HistoryPanel
-          items={historyItems}
-          total={historyTotal}
-          isLoading={isHistoryLoading}
-          error={historyError}
-          selectedId={selectedHistoryId}
-          isSelectionLoading={isSavedDetailLoading}
-          onSelect={handleHistorySelect}
-        />
+        <>
+          <HistoryPanel
+            items={historyItems}
+            total={historyTotal}
+            isLoading={isHistoryLoading}
+            error={historyError}
+            selectedId={selectedHistoryId}
+            isSelectionLoading={
+              isSavedDetailLoading
+            }
+            search={historySearch}
+            riskLevel={historyRiskLevel}
+            onSearchChange={
+              handleHistorySearchChange
+            }
+            onRiskLevelChange={
+              handleRiskLevelChange
+            }
+            onClearFilters={
+              handleClearHistoryFilters
+            }
+            onSelect={handleHistorySelect}
+          />
 
-        <SavedAnalysisDetail
-          detail={savedDetail}
-          isLoading={isSavedDetailLoading}
-          error={savedDetailError}
-          onClose={handleCloseSavedDetail}
-        />
-      </>
-    ) : (
-      <section className="history-panel">
-        <p className="eyebrow">PRIVACY MODE</p>
-        <h2>Public demo protection</h2>
+          <SavedAnalysisDetail
+            detail={savedDetail}
+            isLoading={isSavedDetailLoading}
+            error={savedDetailError}
+            onClose={handleCloseSavedDetail}
+          />
+        </>
+      ) : (
+        <section className="history-panel">
+          <p className="eyebrow">
+            PRIVACY MODE
+          </p>
 
-        <p className="history-message">
-          Uploaded emails are analyzed temporarily and are
-          not saved. Analysis history is disabled in this
-          public demo.
-        </p>
-      </section>
-    )}
+          <h2>Public demo protection</h2>
+
+          <p className="history-message">
+            Uploaded emails are analyzed temporarily
+            and are not saved. Analysis history is
+            disabled in this public demo.
+          </p>
+        </section>
+      )}
     </main>
   );
 }

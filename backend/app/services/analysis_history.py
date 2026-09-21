@@ -3,11 +3,11 @@
 from hashlib import sha256
 from typing import Any
 
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.models import AnalysisRecord
-from sqlalchemy import func, select
 
 
 def _safe_filename(file_name: str) -> str:
@@ -85,11 +85,45 @@ def list_analysis_records(
     *,
     limit: int,
     offset: int,
+    search: str | None = None,
+    risk_level: str | None = None,
 ) -> tuple[list[AnalysisRecord], int]:
-    """Return recent analyses and the total record count."""
+    """Return filtered analyses and their total count."""
+
+    filters = []
+
+    normalized_search = (
+        search.strip()
+        if search
+        else ""
+    )
+
+    if normalized_search:
+        filters.append(
+            or_(
+                AnalysisRecord.file_name.icontains(
+                    normalized_search,
+                    autoescape=True,
+                ),
+                AnalysisRecord.subject.icontains(
+                    normalized_search,
+                    autoescape=True,
+                ),
+                AnalysisRecord.sender.icontains(
+                    normalized_search,
+                    autoescape=True,
+                ),
+            )
+        )
+
+    if risk_level:
+        filters.append(
+            AnalysisRecord.risk_level == risk_level
+        )
 
     statement = (
         select(AnalysisRecord)
+        .where(*filters)
         .order_by(
             AnalysisRecord.created_at.desc(),
             AnalysisRecord.id.desc(),
@@ -102,9 +136,12 @@ def list_analysis_records(
         db.scalars(statement).all()
     )
 
-    total = db.scalar(
+    total_statement = (
         select(func.count(AnalysisRecord.id))
-    ) or 0
+        .where(*filters)
+    )
+
+    total = db.scalar(total_statement) or 0
 
     return records, total
 
