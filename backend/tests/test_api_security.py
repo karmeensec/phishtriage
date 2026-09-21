@@ -8,6 +8,11 @@ from backend.app.main import (
     get_allowed_origins,
 )
 
+from backend.app.middleware.rate_limit import (
+    ANALYSIS_RATE_LIMIT_REQUESTS,
+    analysis_rate_limiter,
+)
+
 
 client = TestClient(app)
 
@@ -107,3 +112,44 @@ def test_allowed_origins_can_come_from_environment(
         "https://phishtriage.example",
         "https://www.phishtriage.example",
     ]
+
+
+def test_analysis_endpoint_is_rate_limited() -> None:
+    analysis_rate_limiter.reset()
+
+    try:
+        for _ in range(ANALYSIS_RATE_LIMIT_REQUESTS):
+            response = client.post(
+                "/api/v1/analyze",
+                files={
+                    "file": (
+                        "invalid.txt",
+                        b"Not an email",
+                        "text/plain",
+                    )
+                },
+            )
+
+            assert response.status_code == 400
+
+        blocked_response = client.post(
+            "/api/v1/analyze",
+            files={
+                "file": (
+                    "invalid.txt",
+                    b"Not an email",
+                    "text/plain",
+                )
+            },
+        )
+
+        assert blocked_response.status_code == 429
+        assert blocked_response.json()["detail"] == (
+            "Too many analysis requests. "
+            "Please try again later."
+        )
+        assert int(
+            blocked_response.headers["retry-after"]
+        ) >= 1
+    finally:
+        analysis_rate_limiter.reset()

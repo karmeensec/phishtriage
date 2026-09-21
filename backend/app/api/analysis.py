@@ -18,6 +18,9 @@ from backend.app.analyzers.email_parser import (
 )
 from backend.app.config import public_demo_mode_enabled
 from backend.app.database import get_db
+from backend.app.middleware.rate_limit import (
+    enforce_analysis_rate_limit,
+)
 from backend.app.services.analysis_history import (
     save_analysis_record,
 )
@@ -26,6 +29,9 @@ from backend.app.services.analysis_history import (
 router = APIRouter(
     prefix="/analyze",
     tags=["Analysis"],
+    dependencies=[
+        Depends(enforce_analysis_rate_limit),
+    ],
 )
 
 

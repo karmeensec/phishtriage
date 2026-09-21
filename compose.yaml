@@ -6,6 +6,8 @@ services:
     environment:
       DATABASE_URL: sqlite:////data/phishtriage.db
       PUBLIC_DEMO_MODE: "false"
+      ANALYSIS_RATE_LIMIT_REQUESTS: "20"
+      ANALYSIS_RATE_LIMIT_WINDOW_SECONDS: "60"
       ALLOWED_ORIGINS: >-
         http://localhost:5173,
         http://127.0.0.1:5173,
