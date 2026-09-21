@@ -16,6 +16,7 @@ from backend.app.analyzers.email_parser import (
     EmailValidationError,
     parse_email_bytes,
 )
+from backend.app.analyzers.risk_scorer import calculate_risk
 from backend.app.config import public_demo_mode_enabled
 from backend.app.database import get_db
 from backend.app.middleware.rate_limit import (
@@ -23,6 +24,9 @@ from backend.app.middleware.rate_limit import (
 )
 from backend.app.services.analysis_history import (
     save_analysis_record,
+)
+from backend.app.services.url_reputation import (
+    analyze_url_reputation,
 )
 
 
@@ -68,6 +72,31 @@ async def analyze_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         ) from error
+
+    reputation_analysis = await analyze_url_reputation(
+        analysis_result["urls"]
+    )
+
+    reputation_findings = reputation_analysis["findings"]
+
+    analysis_result["url_reputation_analysis"] = (
+        reputation_analysis
+    )
+
+    if reputation_findings:
+        analysis_result["url_analysis"]["findings"].extend(
+            reputation_findings
+        )
+
+        combined_findings = [
+            *analysis_result["findings"],
+            *reputation_findings,
+        ]
+
+        analysis_result["findings"] = combined_findings
+        analysis_result["risk_assessment"] = calculate_risk(
+            combined_findings
+        )
 
     if public_demo_mode_enabled():
         return {

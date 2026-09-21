@@ -8,6 +8,8 @@ services:
       PUBLIC_DEMO_MODE: "false"
       ANALYSIS_RATE_LIMIT_REQUESTS: "20"
       ANALYSIS_RATE_LIMIT_WINDOW_SECONDS: "60"
+      URL_REPUTATION_ENABLED: ${URL_REPUTATION_ENABLED:-false}
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY:-}
       ALLOWED_ORIGINS: >-
         http://localhost:5173,
         http://127.0.0.1:5173,
