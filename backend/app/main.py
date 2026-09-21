@@ -1,18 +1,49 @@
+"""FastAPI application configuration."""
+
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.app.api.analyses import router as analyses_router
 from backend.app.api.analysis import router as analysis_router
 from backend.app.api.health import router as health_router
 from backend.app.middleware.security import (
     add_security_headers,
 )
-from backend.app.api.analyses import router as analyses_router
 
 
-ALLOWED_ORIGINS = [
+DEFAULT_ALLOWED_ORIGINS = (
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-]
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+)
+
+
+def get_allowed_origins() -> list[str]:
+    """Return explicitly permitted frontend origins."""
+
+    configured_origins = os.getenv("ALLOWED_ORIGINS", "")
+
+    if not configured_origins.strip():
+        return list(DEFAULT_ALLOWED_ORIGINS)
+
+    origins = [
+        origin.strip().rstrip("/")
+        for origin in configured_origins.split(",")
+        if origin.strip()
+    ]
+
+    if "*" in origins:
+        raise ValueError(
+            "ALLOWED_ORIGINS must contain explicit origins."
+        )
+
+    return origins
+
+
+ALLOWED_ORIGINS = get_allowed_origins()
 
 
 app = FastAPI(
