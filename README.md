@@ -19,6 +19,16 @@ The public deployment runs in privacy mode. Uploaded emails are analyzed tempora
 
 The free hosting service can take approximately 30-60 seconds to wake after a period of inactivity.
 
+## Screenshots
+
+### Public analysis dashboard
+
+![PhishTriage public dashboard](docs/screenshots/dashboard.png)
+
+### Explainable phishing investigation
+
+![PhishTriage analysis results](docs/screenshots/analysis-report.png)
+
 ## Features
 
 * Secure `.eml` upload and validation
