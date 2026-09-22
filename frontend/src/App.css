@@ -636,3 +636,20 @@ button:disabled {
     width: 100%;
   }
 }
+
+.creator-credit {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.creator-credit a {
+  color: #7dd3fc;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.creator-credit a:hover {
+  color: #bae6fd;
+  text-decoration: underline;
+}

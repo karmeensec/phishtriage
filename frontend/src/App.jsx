@@ -239,6 +239,19 @@ function App() {
             Automated phishing email analysis and
             incident triage
           </p>
+
+          <p className="creator-credit">
+            Designed and developed by{" "}
+            <a
+              href="https://github.com/karmeensec"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Kamil Ismayilzada
+            </a>
+            {" | "}
+            &copy; {new Date().getFullYear()}
+          </p>
         </div>
 
         <span className="status">
