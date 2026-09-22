@@ -18,11 +18,22 @@ function normalizeRiskLevel(level) {
 
 function formatEvidenceValue(value) {
   if (Array.isArray(value)) {
-    return value.join(", ");
+    return value
+      .map((item) => formatEvidenceValue(item))
+      .join(", ");
   }
 
   if (value && typeof value === "object") {
-    return JSON.stringify(value);
+    return Object.entries(value)
+      .map(([key, nestedValue]) => {
+        const label = key.replaceAll("_", " ");
+
+        return (
+          `${label}: ` +
+          formatEvidenceValue(nestedValue)
+        );
+      })
+      .join(" | ");
   }
 
   return String(value ?? "Not provided");
@@ -54,15 +65,15 @@ function SavedAnalysisDetail({
   }
 
   function handlePdfDownload() {
-  if (!detail) {
-    return;
-  }
+    if (!detail) {
+      return;
+    }
 
-  downloadPdfReport(
-    detail,
-    detail.file_name,
-  );
-}
+    downloadPdfReport(
+      detail,
+      detail.file_name,
+    );
+  }
 
   return (
     <section className="saved-detail result-panel">
@@ -142,7 +153,7 @@ function SavedAnalysisDetail({
               <strong
                 className={`risk-text-${riskLevel}`}
               >
-                {detail.risk_score}/100 · {riskLevel}
+                {detail.risk_score}/100 - {riskLevel}
               </strong>
             </div>
 

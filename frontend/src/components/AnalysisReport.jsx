@@ -35,11 +35,22 @@ function normalizeAuthResult(result) {
 
 function formatEvidenceValue(value) {
   if (Array.isArray(value)) {
-    return value.join(", ");
+    return value
+      .map((item) => formatEvidenceValue(item))
+      .join(", ");
   }
 
   if (value && typeof value === "object") {
-    return JSON.stringify(value);
+    return Object.entries(value)
+      .map(([key, nestedValue]) => {
+        const label = key.replaceAll("_", " ");
+
+        return (
+          `${label}: ` +
+          formatEvidenceValue(nestedValue)
+        );
+      })
+      .join(" | ");
   }
 
   return String(value ?? "Not provided");
