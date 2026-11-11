@@ -1,4 +1,4 @@
-# PhishTriage
+# Email Threat Analyzer
 
 [![Continuous Integration](https://github.com/karmeensec/phishtriage/actions/workflows/ci.yml/badge.svg)](https://github.com/karmeensec/phishtriage/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/demo-live-38bdf8)](https://phishtriage.onrender.com/)
@@ -7,7 +7,7 @@
 
 A secure phishing-email analysis and incident-triage platform built with FastAPI, React, SQLAlchemy, and Docker.
 
-PhishTriage accepts `.eml` files, analyzes them without opening links or executing attachments, calculates an explainable risk score, and presents the evidence through an analyst-focused dashboard.
+Email Threat Analyzer accepts `.eml` files, analyzes them without opening links or executing attachments, calculates an explainable risk score, and presents the evidence through an analyst-focused dashboard.
 
 ## Live Demo
 
@@ -23,11 +23,11 @@ The free hosting service can take approximately 30-60 seconds to wake after a pe
 
 ### Public analysis dashboard
 
-![PhishTriage public dashboard](docs/screenshots/dashboard.png)
+![Email Threat Analyzer public dashboard](docs/screenshots/dashboard.png)
 
 ### Explainable phishing investigation
 
-![PhishTriage analysis results](docs/screenshots/analysis-report.png)
+![Email Threat Analyzer analysis results](docs/screenshots/analysis-report.png)
 
 ## Features
 
@@ -126,7 +126,7 @@ The total public score is capped at `100`.
 |  40-69 | High       |
 | 70-100 | Critical   |
 
-PhishTriage is rule-based. A low score means that the message did not trigger the currently implemented rules; it does not guarantee that the email is safe.
+Email Threat Analyzer is rule-based. A low score means that the message did not trigger the currently implemented rules; it does not guarantee that the email is safe.
 
 ## Quick Start with Docker
 
@@ -211,7 +211,7 @@ Interactive OpenAPI documentation is available at `/docs`.
 
 ## Configuration
 
-PhishTriage reads deployment configuration from environment variables.
+Email Threat Analyzer reads deployment configuration from environment variables.
 
 | Variable                 | Default                | Purpose                                   |
 | ------------------------ | ---------------------- | ----------------------------------------- |
@@ -239,7 +239,7 @@ In public-demo mode:
 
 ## Security and Privacy
 
-PhishTriage applies defensive controls when handling untrusted email files:
+Email Threat Analyzer applies defensive controls when handling untrusted email files:
 
 * Only `.eml` files are accepted
 * Upload size is limited to 2 MB
@@ -326,7 +326,7 @@ The frontend communicates with the production API through an environment-configu
 
 ## Limitations
 
-PhishTriage is a defensive, rule-based analysis platform. It is not a replacement for a secure email gateway, malware sandbox, antivirus engine, or professional incident-response process.
+Email Threat Analyzer is a defensive, rule-based analysis platform. It is not a replacement for a secure email gateway, malware sandbox, antivirus engine, or professional incident-response process.
 
 Current limitations include:
 

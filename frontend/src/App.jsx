@@ -233,7 +233,7 @@ function App() {
             SECURITY OPERATIONS
           </p>
 
-          <h1>PhishTriage</h1>
+          <h1>Email Threat Analyzer</h1>
 
           <p className="subtitle">
             Automated phishing email analysis and
@@ -255,7 +255,7 @@ function App() {
         </div>
 
         <span className="status">
-          System Online
+          {/* System Online */}
         </span>
       </header>
 
